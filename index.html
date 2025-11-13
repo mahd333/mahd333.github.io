@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Space Shooter Deluxe</title>
+
 <style>
 body{
   margin:0;
@@ -21,45 +22,40 @@ canvas{
   position:fixed;
   z-index:10;
 }
-#hud{ left:12px; top:12px; font-weight:700; color:#0ff; }
+#hud{
+  left:12px; top:12px;
+  font-weight:700; color:#0ff;
+}
 #hud div{ margin-bottom:4px; }
 #controls{ right:12px; top:12px; }
 #menu{
   top:0; left:0;
   width:100vw; height:100vh;
-  display:flex; align-items:center;
-  justify-content:center;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
   background:rgba(0,0,0,0.85);
-  flex-direction:column;
   color:#0ff; font-size:24px;
-  text-align:center
 }
 button{
-  margin-top:10px;
-  padding:8px 14px;
-  border-radius:6px;
-  border:0;
-  background:#222;
-  color:#0ff;
-  cursor:pointer
+  margin-top:10px; padding:8px 14px;
+  border-radius:6px; border:0;
+  background:#222; color:#0ff;
+  cursor:pointer;
 }
 #touchControls{
-  bottom:10px;
-  left:50%;
+  bottom:10px; left:50%;
   transform:translateX(-50%);
-  display:flex;
-  gap:12px;
+  display:flex; gap:12px;
 }
 #touchControls button{
   width:70px; height:70px;
-  border-radius:50%;
-  font-size:24px;
+  border-radius:50%; font-size:24px;
   background:rgba(20,20,20,0.85);
-  border:2px solid #0ff;
-  color:#0ff;
+  border:2px solid #0ff; color:#0ff;
 }
 </style>
 </head>
+
 <body>
 
 <div id="menu">
@@ -70,9 +66,9 @@ button{
 </div>
 
 <div id="hud">
-  <div id="score">Score: 0</div>
-  <div id="lives">Lives: 3</div>
-  <div id="online">Players Online: 0</div>
+  <div id="scoreEl">Score: 0</div>
+  <div id="livesEl">Lives: 3</div>
+  <div id="onlineEl">Players Online: 0</div>
 </div>
 
 <div id="controls">
@@ -87,97 +83,73 @@ button{
 </div>
 
 <canvas id="game"></canvas>
+
+<!-- FAAAAHH SOUND -->
 <audio id="hitSound" src="https://files.catbox.moe/f7rg41.mp3"></audio>
 
 <script>
-// CANVAS SETUP
-const canvas=document.getElementById("game");
-const ctx=canvas.getContext("2d");
-let W=canvas.width=innerWidth;
-let H=canvas.height=innerHeight;
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+let W = canvas.width = innerWidth;
+let H = canvas.height = innerHeight;
 
-// GAME STATE
-let paused=false;
-let score=0;
-let bullets=[], enemies=[], enemyBullets=[];
-let flashRed=0;
-let stars=[];
-let particles=[];
-let explosions=[];
+// Game vars
+let paused = false;
+let score = 0;
+let bullets = [], enemies = [], enemyBullets = [];
+let stars = [], particles = [], explosions = [];
+let flashRed = 0;
 
-// PLAYER
-const player={
-  x:W/2, y:H-80,
-  w:40, h:40,
-  speed:400,
-  laserLevel:1,
-  hits:0,
-  maxHits:3,
-  tilt:0
+// Player
+const player = {
+  x: W/2, y: H-80,
+  w: 40, h: 40,
+  speed: 400,
+  laserLevel: 1,
+  hits: 0,
+  maxHits: 3,
+  tilt: 0
 };
 
-// INPUT
-const keys={left:false,right:false};
-document.addEventListener("keydown",e=>{
-  if(e.key==="a"||e.key==="A") keys.left=true;
-  if(e.key==="d"||e.key==="D") keys.right=true;
+// Input
+const keys = { left:false, right:false };
+document.addEventListener("keydown", e=>{
+  if(e.key==="a") keys.left=true;
+  if(e.key==="d") keys.right=true;
 });
-document.addEventListener("keyup",e=>{
-  if(e.key==="a"||e.key==="A") keys.left=false;
-  if(e.key==="d"||e.key==="D") keys.right=false;
+document.addEventListener("keyup", e=>{
+  if(e.key==="a") keys.left=false;
+  if(e.key==="d") keys.right=false;
 });
 
-// SHOOT
+// Shoot
 function shoot(){
   if(paused) return;
   for(let i=-player.laserLevel+1;i<=player.laserLevel-1;i++){
-    bullets.push({
-      x:player.x+i*10,
-      y:player.y-20,
-      r:5,
-      dy:-600
-    });
+    bullets.push({ x:player.x+i*10, y:player.y-20, r:5, dy:-600 });
   }
 }
-canvas.addEventListener("pointerdown",shoot);
+canvas.addEventListener("pointerdown", shoot);
 
-// TOUCH BUTTONS
+// Mobile
 function bind(btn, key){
-  btn.addEventListener("pointerdown",e=>{e.preventDefault();keys[key]=true;});
-  btn.addEventListener("pointerup",()=>keys[key]=false);
-  btn.addEventListener("pointerleave",()=>keys[key]=false);
+  btn.addEventListener("pointerdown", ()=>keys[key]=true);
+  btn.addEventListener("pointerup", ()=>keys[key]=false);
 }
-bind(leftBtn,"left");
-bind(rightBtn,"right");
-fireBtn.addEventListener("pointerdown",e=>{e.preventDefault();shoot()});
+bind(leftBtn, "left");
+bind(rightBtn, "right");
+fireBtn.addEventListener("pointerdown", shoot);
 
-// SOUND
-const hitSound=document.getElementById("hitSound");
-
-// MENU START
-startBtn.addEventListener("pointerdown",()=>{
-  menu.style.display="none";
-  paused=false;
-  resetGame();
-  hitSound.currentTime=0;
-  hitSound.play();
-});
-
-// PAUSE / RESUME
-pauseBtn.addEventListener("pointerdown",()=>paused=true);
-resumeBtn.addEventListener("pointerdown",()=>paused=false);
-
-// FAKE ONLINE COUNTER
-let onlineCount = Math.floor(Math.random()*100)+10;
-document.getElementById("online").textContent="Players Online: "+onlineCount;
-
+// Online counter
+let online = Math.floor(Math.random()*140)+10;
+onlineEl.textContent = "Players Online: "+online;
 setInterval(()=>{
-  let diff = Math.floor(Math.random()*10)-5;
-  onlineCount=Math.max(10,Math.min(150,onlineCount+diff));
-  document.getElementById("online").textContent="Players Online: "+onlineCount;
-},3000);
+  online += Math.floor(Math.random()*10)-5;
+  online = Math.max(10, Math.min(150, online));
+  onlineEl.textContent = "Players Online: "+online;
+}, 3000);
 
-// STARFIELD BACKGROUND
+// Stars
 for(let i=0;i<200;i++){
   stars.push({
     x:Math.random()*W,
@@ -187,20 +159,18 @@ for(let i=0;i<200;i++){
   });
 }
 
-// ENEMY SPAWN
+// Enemy spawn
 function spawnEnemy(){
-  if(paused) return;
   enemies.push({
     x:Math.random()*(W-60)+30,
     y:-40,
-    w:40,h:40,
-    speed:100+Math.random()*60,
-    shootTimer:0.8+Math.random()*1.2
+    w:40, h:40,
+    speed:180 + Math.random()*120,   // FASTER
+    shootTimer:0.6 + Math.random()*0.9
   });
 }
-setInterval(spawnEnemy,1200);
+setInterval(spawnEnemy, 1200);
 
-// EXPLOSION
 function createExplosion(x,y){
   for(let i=0;i<22;i++){
     explosions.push({
@@ -213,18 +183,47 @@ function createExplosion(x,y){
   }
 }
 
-// UPDATE LOOP
+const hitSound = document.getElementById("hitSound");
+
+// Safe hit sound (prevents freeze)
+function playerHit(){
+  player.hits++;
+  flashRed = 0.2;
+
+  try {
+    hitSound.pause();
+    hitSound.currentTime = 0;
+    hitSound.play().catch(()=>{});
+  } catch(e){}
+
+  if(player.hits >= player.maxHits){
+    showGameOver();
+    return;
+  }
+
+  livesEl.textContent = "Lives: " + (player.maxHits - player.hits);
+}
+
+function showGameOver(){
+  paused = true;
+  menuTitle.textContent = "Game Over";
+  menuSubtitle.textContent = "Final Score: " + score;
+  menuExtra.textContent = "Tap to play again";
+  startBtn.textContent = "Play Again";
+  menu.style.display = "flex";
+}
+
 function update(dt){
   if(paused) return;
 
-  // MOVE PLAYER
+  // Move + tilt
   if(keys.left){ player.x-=player.speed*dt; player.tilt=-0.25; }
   else if(keys.right){ player.x+=player.speed*dt; player.tilt=0.25; }
   else player.tilt=0;
 
-  player.x=Math.max(30,Math.min(W-30,player.x));
+  player.x = Math.max(30, Math.min(W-30, player.x));
 
-  // THRUSTER PARTICLES
+  // Thruster particles
   particles.push({
     x:player.x+(Math.random()*20-10),
     y:player.y+30,
@@ -233,138 +232,117 @@ function update(dt){
     size:2+Math.random()*2
   });
 
-  // MOVE STARS
-  stars.forEach(s=>{
+  // Stars
+  for(let s of stars){
     s.y+=s.v*dt;
     if(s.y>H){ s.y=0; s.x=Math.random()*W; }
-  });
+  }
 
-  // MOVE BULLETS
-  bullets.forEach((b,i)=>{
-    b.y+=b.dy*dt;
-    if(b.y<-10) bullets.splice(i,1);
-  });
+  // Bullets
+  for(let i=bullets.length-1;i>=0;i--){
+    bullets[i].y+=bullets[i].dy*dt;
+    if(bullets[i].y<-10) bullets.splice(i,1);
+  }
 
-  // MOVE ENEMIES
-  enemies.forEach((e,i)=>{
+  // Enemies
+  for(let i=enemies.length-1;i>=0;i--){
+    let e=enemies[i];
     e.y+=e.speed*dt;
 
-    if(e.y>H+40){ enemies.splice(i,1); return; }
+    if(e.y>H+40){ enemies.splice(i,1); continue; }
 
-    // enemy shooting
-    e.shootTimer-=dt;
+    e.shootTimer -= dt;
     if(e.shootTimer<=0){
       enemyBullets.push({
-        x:e.x+20,
-        y:e.y+30,
-        r:6,
-        dy:380
+        x:e.x+20, y:e.y+30, r:6,
+        dy:650   // FASTER
       });
-      e.shootTimer=0.8+Math.random()*1.2;
+      e.shootTimer = 0.6 + Math.random()*0.9;
     }
 
-    // HIT BY PLAYER BULLET
-    bullets.forEach((b,j)=>{
+    // bullet hit
+    for(let j=bullets.length-1;j>=0;j--){
+      let b = bullets[j];
       if(b.x>e.x && b.x<e.x+e.w && b.y>e.y && b.y<e.y+e.h){
         bullets.splice(j,1);
         enemies.splice(i,1);
-        score+=10;
+        score += 10;
+        scoreEl.textContent = "Score: " + score;
         player.laserLevel++;
-        document.getElementById("score").textContent="Score: "+score;
-        createExplosion(e.x+20,e.y+20);
+        createExplosion(e.x+20, e.y+20);
+        break;
       }
-    });
-  });
+    }
+  }
 
-  // ENEMY BULLETS
-  enemyBullets.forEach((b,i)=>{
+  // Enemy bullets
+  for(let i=enemyBullets.length-1;i>=0;i--){
+    let b = enemyBullets[i];
     b.y+=b.dy*dt;
-    if(b.y>H){ enemyBullets.splice(i,1); return; }
+    if(b.y>H){ enemyBullets.splice(i,1); continue; }
 
-    if(b.x>player.x-20 && b.x<player.x+20 &&
-       b.y>player.y-20 && b.y<player.y+20){
+    if(
+      b.x>player.x-20 && b.x<player.x+20 &&
+      b.y>player.y-20 && b.y<player.y+20
+    ){
       enemyBullets.splice(i,1);
       playerHit();
     }
-  });
-
-  // PARTICLES
-  particles.forEach((p,i)=>{
-    p.y+=p.vy*dt;
-    p.alpha-=dt*1.5;
-    if(p.alpha<=0) particles.splice(i,1);
-  });
-
-  // EXPLOSIONS
-  explosions.forEach((p,i)=>{
-    p.x+=p.vx*dt;
-    p.y+=p.vy*dt;
-    p.life-=dt;
-    if(p.life<=0) explosions.splice(i,1);
-  });
-
-  if(flashRed>0) flashRed-=dt;
-}
-
-// PLAYER HIT
-function playerHit(){
-  player.hits++;
-  flashRed=0.2;
-  hitSound.currentTime=0;
-  hitSound.play();
-
-  if(player.hits>=player.maxHits){
-    showGameOver();
-    return;
   }
 
-  document.getElementById("lives").textContent="Lives: "+(player.maxHits-player.hits);
+  // Particles FIX
+  for(let i=particles.length-1;i>=0;i--){
+    let p = particles[i];
+    p.y += p.vy * dt;
+    p.alpha -= dt * 1.5;
+    if(p.alpha <= 0) particles.splice(i,1);
+  }
+
+  // Explosions FIX
+  for(let i=explosions.length-1;i>=0;i--){
+    let p = explosions[i];
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.life -= dt;
+    if(p.life <= 0) explosions.splice(i,1);
+  }
+
+  if(flashRed>0) flashRed -= dt;
 }
 
-// GAME OVER
-function showGameOver(){
-  paused=true;
-  menuTitle.textContent="Game Over";
-  menuSubtitle.textContent="Final Score: "+score;
-  menuExtra.textContent="Tap to play again";
-  startBtn.textContent="Play Again";
-  menu.style.display="flex";
-}
-
-// DRAW LOOP
 function draw(){
   ctx.clearRect(0,0,W,H);
 
-  // FLASH RED
+  // Flash
   if(flashRed>0){
     ctx.fillStyle=`rgba(255,0,0,${flashRed})`;
     ctx.fillRect(0,0,W,H);
   }
 
-  // ⭐ STARS
+  // Stars
   ctx.fillStyle="#ffffff";
-  stars.forEach(s=>{
+  for(let s of stars){
     ctx.globalAlpha=s.s/3;
     ctx.fillRect(s.x,s.y,s.s,s.s);
-  });
+  }
   ctx.globalAlpha=1;
 
-  // 🔥 PARTICLES
-  particles.forEach(p=>{
+  // Thruster particles
+  for(let p of particles){
     ctx.globalAlpha=p.alpha;
     ctx.fillStyle="#44ccff";
     ctx.beginPath();
     ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
     ctx.fill();
-  });
+  }
   ctx.globalAlpha=1;
 
-  // 🚀 PLAYER SPACESHIP (WITH TILT + FLAMES)
+  // Player Ship
   ctx.save();
   ctx.translate(player.x,player.y);
   ctx.rotate(player.tilt);
 
-  // engine flame
+  // Flame
   ctx.fillStyle="rgba(0,150,255,0.8)";
   ctx.beginPath();
   ctx.moveTo(-6,28);
@@ -373,7 +351,7 @@ function draw(){
   ctx.closePath();
   ctx.fill();
 
-  // ship body
+  // Body
   ctx.fillStyle="#4db8ff";
   ctx.beginPath();
   ctx.moveTo(0,-32);
@@ -383,29 +361,29 @@ function draw(){
   ctx.closePath();
   ctx.fill();
 
-  // cockpit
+  // Cockpit
   ctx.fillStyle="#99e6ff";
   ctx.beginPath();
   ctx.ellipse(0,-5,10,13,0,0,Math.PI*2);
   ctx.fill();
 
-  // wings
+  // Wings
   ctx.fillStyle="#3399ff";
   ctx.beginPath(); ctx.moveTo(-10,0); ctx.lineTo(-40,20); ctx.lineTo(-10,18); ctx.closePath(); ctx.fill();
   ctx.beginPath(); ctx.moveTo(10,0); ctx.lineTo(40,20); ctx.lineTo(10,18); ctx.closePath(); ctx.fill();
 
   ctx.restore();
 
-  // 🔫 PLAYER BULLETS
+  // Player bullets
   ctx.fillStyle="#ffff66";
-  bullets.forEach(b=>{
+  for(let b of bullets){
     ctx.beginPath();
     ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
     ctx.fill();
-  });
+  }
 
-  // 👾 ENEMIES
-  enemies.forEach(e=>{
+  // Enemies
+  for(let e of enemies){
     ctx.save();
     ctx.translate(e.x+20,e.y+20);
 
@@ -426,57 +404,64 @@ function draw(){
     ctx.fillRect(-26,6,52,6);
 
     ctx.restore();
-  });
+  }
 
-  // 💥 EXPLOSIONS
-  explosions.forEach(p=>{
+  // Explosions
+  for(let p of explosions){
     ctx.globalAlpha=p.life;
     ctx.fillStyle="#ffdd55";
     ctx.beginPath();
     ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
     ctx.fill();
-  });
+  }
   ctx.globalAlpha=1;
 
-  // ENEMY BULLETS
+  // Enemy bullets
   ctx.fillStyle="#ff69b4";
-  enemyBullets.forEach(b=>{
+  for(let b of enemyBullets){
     ctx.beginPath();
     ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
     ctx.fill();
-  });
+  }
 }
 
-// RESET GAME
 function resetGame(){
-  score=0;
-  bullets=[];
-  enemies=[];
-  enemyBullets=[];
-  particles=[];
-  explosions=[];
-  player.x=W/2;
-  player.hits=0;
-  player.laserLevel=1;
-  document.getElementById("score").textContent="Score: 0";
-  document.getElementById("lives").textContent="Lives: 3";
-  flashRed=0;
+  score = 0;
+  bullets = [];
+  enemies = [];
+  enemyBullets = [];
+  particles = [];
+  explosions = [];
+  player.x = W/2;
+  player.hits = 0;
+  player.laserLevel = 1;
+  scoreEl.textContent = "Score: 0";
+  livesEl.textContent = "Lives: 3";
+  flashRed = 0;
 }
 
-// GAME LOOP
-let last=0;
+startBtn.addEventListener("pointerdown", ()=>{
+  menu.style.display="none";
+  paused = false;
+  resetGame();
+});
+
+pauseBtn.addEventListener("pointerdown", ()=>paused=true);
+resumeBtn.addEventListener("pointerdown", ()=>paused=false);
+
+let last = 0;
 function loop(ts){
-  let dt=(ts-last)/1000;
-  last=ts;
+  let dt = (ts-last)/1000;
+  last = ts;
   update(dt);
   draw();
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
 
-window.addEventListener("resize",()=>{
-  W=canvas.width=innerWidth;
-  H=canvas.height=innerHeight;
+window.addEventListener("resize", ()=>{
+  W = canvas.width = innerWidth;
+  H = canvas.height = innerHeight;
 });
 </script>
 </body>
