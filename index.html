@@ -170,7 +170,8 @@ function spawnEnemy(){
     y:-40,
     w:40, h:40,
     speed:180 + Math.random()*120,   // FASTER
-    shootTimer:0.6 + Math.random()*0.9
+    shootTimer:0.4 + Math.random()*0.5, // 🔥 shoots a bit more often
+    hp:3                                // 🔥 3-shot enemies
   });
 }
 setInterval(spawnEnemy, 1200);
@@ -259,21 +260,25 @@ function update(dt){
     if(e.shootTimer<=0){
       enemyBullets.push({
         x:e.x+20, y:e.y+30, r:6,
-        dy:650   // FASTER
+        dy:900   // 🔥 enemy bullets move faster
       });
-      e.shootTimer = 0.6 + Math.random()*0.9;
+      e.shootTimer = 0.4 + Math.random()*0.5; // keep it fast
     }
 
-    // bullet hit
+    // bullet hit (3-shot logic)
     for(let j=bullets.length-1;j>=0;j--){
       let b = bullets[j];
       if(b.x>e.x && b.x<e.x+e.w && b.y>e.y && b.y<e.y+e.h){
         bullets.splice(j,1);
-        enemies.splice(i,1);
-        score += 10;
-        scoreEl.textContent = "Score: " + score;
-        player.laserLevel++;
-        createExplosion(e.x+20, e.y+20);
+        e.hp--;                         // 🔥 take 1 HP
+
+        if(e.hp<=0){
+          enemies.splice(i,1);
+          score += 10;
+          scoreEl.textContent = "Score: " + score;
+          player.laserLevel++;
+          createExplosion(e.x+20, e.y+20);
+        }
         break;
       }
     }
@@ -440,7 +445,6 @@ function resetGame(){
   player.hits = 0;
   player.laserLevel = 1;
   scoreEl.textContent = "Score: 0";
-  livesEl.textContent = "Lives: 3";
   flashRed = 0;
 }
 
