@@ -2,199 +2,314 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Space Shooter</title>
+<title>Space Shooter Deluxe</title>
 <style>
-body{margin:0;overflow:hidden;background:black;color:#0f0;font-family:sans-serif;touch-action:none;}
-canvas{display:block;width:100vw;height:100vh}
-#hud,#controls,#menu,#touchControls{position:fixed;z-index:10}
-#hud{left:12px;top:12px;font-weight:700;color:#0ff}
-#hud div{margin-bottom:4px;}
-#controls{right:12px;top:12px}
+body{
+  margin:0;
+  overflow:hidden;
+  background:black;
+  color:#0f0;
+  font-family:sans-serif;
+  touch-action:none;
+}
+canvas{
+  display:block;
+  width:100vw;
+  height:100vh;
+}
+#hud,#controls,#menu,#touchControls{
+  position:fixed;
+  z-index:10;
+}
+#hud{ left:12px; top:12px; font-weight:700; color:#0ff; }
+#hud div{ margin-bottom:4px; }
+#controls{ right:12px; top:12px; }
 #menu{
- top:0;left:0;width:100vw;height:100vh;
- display:flex;align-items:center;justify-content:center;
- background:rgba(0,0,0,0.85);
- flex-direction:column;color:#0ff;font-size:24px;text-align:center
+  top:0; left:0;
+  width:100vw; height:100vh;
+  display:flex; align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,0.85);
+  flex-direction:column;
+  color:#0ff; font-size:24px;
+  text-align:center
 }
 button{
- margin-top:10px;padding:8px 14px;border-radius:6px;
- border:0;background:#222;color:#0ff;cursor:pointer
+  margin-top:10px;
+  padding:8px 14px;
+  border-radius:6px;
+  border:0;
+  background:#222;
+  color:#0ff;
+  cursor:pointer
 }
 #touchControls{
- bottom:10px;left:50%;transform:translateX(-50%);
- display:flex;
- gap:12px;
+  bottom:10px;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  gap:12px;
 }
 #touchControls button{
- margin-top:0;
- width:70px;height:70px;
- border-radius:50%;
- font-size:24px;
- background:rgba(20,20,20,0.85);
- border:2px solid #0ff;
+  width:70px; height:70px;
+  border-radius:50%;
+  font-size:24px;
+  background:rgba(20,20,20,0.85);
+  border:2px solid #0ff;
+  color:#0ff;
 }
 </style>
 </head>
 <body>
 
-<!-- Start / Game Over Menu -->
 <div id="menu">
-  <div id="menuTitle">Space Shooter</div>
-  <div id="menuSubtitle">Produced and Developed by Mahd Rashid</div>
+  <div id="menuTitle">Space Shooter Deluxe</div>
+  <div id="menuSubtitle">Produced & Developed by Mahd Rashid</div>
   <div id="menuExtra">Uata Marques Byron are mad buns</div>
   <button id="startBtn">Start Game</button>
 </div>
 
-<!-- HUD -->
 <div id="hud">
   <div id="score">Score: 0</div>
   <div id="lives">Lives: 3</div>
-  <div id="online">Players online: 37</div>
+  <div id="online">Players Online: 0</div>
 </div>
 
-<!-- Controls -->
 <div id="controls">
   <button id="pauseBtn">Pause</button>
   <button id="resumeBtn">Resume</button>
 </div>
 
-<!-- Touch Controls (works on PC + mobile) -->
 <div id="touchControls">
   <button id="leftBtn">◀</button>
   <button id="fireBtn">●</button>
   <button id="rightBtn">▶</button>
 </div>
 
-<!-- Game Canvas -->
 <canvas id="game"></canvas>
-
-<!-- FAAAAHHH Sound -->
 <audio id="hitSound" src="https://files.catbox.moe/f7rg41.mp3"></audio>
 
 <script>
-const canvas=document.getElementById('game');
-const ctx=canvas.getContext('2d');
-let W=canvas.width=window.innerWidth;
-let H=canvas.height=window.innerHeight;
+// CANVAS SETUP
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+let W=canvas.width=innerWidth;
+let H=canvas.height=innerHeight;
 
+// GAME STATE
 let paused=false;
 let score=0;
 let bullets=[], enemies=[], enemyBullets=[];
 let flashRed=0;
+let stars=[];
+let particles=[];
+let explosions=[];
 
-const player={x:W/2,y:H-80,w:40,h:40,speed:400,laserLevel:1,hits:0,maxHits:3};
+// PLAYER
+const player={
+  x:W/2, y:H-80,
+  w:40, h:40,
+  speed:400,
+  laserLevel:1,
+  hits:0,
+  maxHits:3,
+  tilt:0
+};
 
+// INPUT
 const keys={left:false,right:false};
-
-// more reliable keyboard handling
-document.addEventListener('keydown',e=>{
-  const k=e.key;
-  if(k==='a'||k==='A'||k==='ArrowLeft'){ keys.left=true; }
-  if(k==='d'||k==='D'||k==='ArrowRight'){ keys.right=true; }
+document.addEventListener("keydown",e=>{
+  if(e.key==="a"||e.key==="A") keys.left=true;
+  if(e.key==="d"||e.key==="D") keys.right=true;
 });
-document.addEventListener('keyup',e=>{
-  const k=e.key;
-  if(k==='a'||k==='A'||k==='ArrowLeft'){ keys.left=false; }
-  if(k==='d'||k==='D'||k==='ArrowRight'){ keys.right=false; }
+document.addEventListener("keyup",e=>{
+  if(e.key==="a"||e.key==="A") keys.left=false;
+  if(e.key==="d"||e.key==="D") keys.right=false;
 });
 
-// --- SHOOT FUNCTION (mouse + buttons) ---
+// SHOOT
 function shoot(){
   if(paused) return;
   for(let i=-player.laserLevel+1;i<=player.laserLevel-1;i++){
-    bullets.push({x:player.x+i*10,y:player.y-20,r:5,dy:-600});
+    bullets.push({
+      x:player.x+i*10,
+      y:player.y-20,
+      r:5,
+      dy:-600
+    });
   }
 }
+canvas.addEventListener("pointerdown",shoot);
 
-// Mouse click on canvas to shoot
-canvas.addEventListener('pointerdown',e=>{
-  if(paused) return;
-  // only shoot if user clicked on the canvas area, not a UI element
-  shoot();
-});
-
-// Touch/Pointer buttons
-const leftBtn=document.getElementById('leftBtn');
-const rightBtn=document.getElementById('rightBtn');
-const fireBtn=document.getElementById('fireBtn');
-
-function bindPointerHold(btn, keyProp){
-  btn.addEventListener('pointerdown',e=>{
-    e.preventDefault();
-    keys[keyProp]=true;
-  });
-  btn.addEventListener('pointerup',e=>{
-    e.preventDefault();
-    keys[keyProp]=false;
-  });
-  btn.addEventListener('pointerleave',e=>{
-    e.preventDefault();
-    keys[keyProp]=false;
-  });
+// TOUCH BUTTONS
+function bind(btn, key){
+  btn.addEventListener("pointerdown",e=>{e.preventDefault();keys[key]=true;});
+  btn.addEventListener("pointerup",()=>keys[key]=false);
+  btn.addEventListener("pointerleave",()=>keys[key]=false);
 }
+bind(leftBtn,"left");
+bind(rightBtn,"right");
+fireBtn.addEventListener("pointerdown",e=>{e.preventDefault();shoot()});
 
-bindPointerHold(leftBtn,'left');
-bindPointerHold(rightBtn,'right');
+// SOUND
+const hitSound=document.getElementById("hitSound");
 
-fireBtn.addEventListener('pointerdown',e=>{
-  e.preventDefault();
-  shoot();
-});
-
-const hitSound=document.getElementById('hitSound');
-const menu=document.getElementById('menu');
-const menuTitle=document.getElementById('menuTitle');
-const menuSubtitle=document.getElementById('menuSubtitle');
-const menuExtra=document.getElementById('menuExtra');
-const startBtn=document.getElementById('startBtn');
-
-// Start / Play Again button
-startBtn.addEventListener('pointerdown',e=>{
-  e.preventDefault();
-  menu.style.display='none';
+// MENU START
+startBtn.addEventListener("pointerdown",()=>{
+  menu.style.display="none";
   paused=false;
   resetGame();
   hitSound.currentTime=0;
   hitSound.play();
 });
 
-// pause / resume
-document.getElementById('pauseBtn').addEventListener('pointerdown',e=>{
-  e.preventDefault();
-  paused=true;
-});
-document.getElementById('resumeBtn').addEventListener('pointerdown',e=>{
-  e.preventDefault();
-  paused=false;
-});
+// PAUSE / RESUME
+pauseBtn.addEventListener("pointerdown",()=>paused=true);
+resumeBtn.addEventListener("pointerdown",()=>paused=false);
 
-// enemies
+// FAKE ONLINE COUNTER
+let onlineCount = Math.floor(Math.random()*100)+10;
+document.getElementById("online").textContent="Players Online: "+onlineCount;
+
+setInterval(()=>{
+  let diff = Math.floor(Math.random()*10)-5;
+  onlineCount=Math.max(10,Math.min(150,onlineCount+diff));
+  document.getElementById("online").textContent="Players Online: "+onlineCount;
+},3000);
+
+// STARFIELD BACKGROUND
+for(let i=0;i<200;i++){
+  stars.push({
+    x:Math.random()*W,
+    y:Math.random()*H,
+    s:Math.random()*2+1,
+    v:Math.random()*40+20
+  });
+}
+
+// ENEMY SPAWN
 function spawnEnemy(){
   if(paused) return;
-  for(let n=0;n<2;n++){
-    const x=Math.random()*(W-50)+25;
-    enemies.push({
-      x:x,y:50,w:40,h:40,
-      speed:100+Math.random()*100,
-      shootTimer:1+Math.random()*2
+  enemies.push({
+    x:Math.random()*(W-60)+30,
+    y:-40,
+    w:40,h:40,
+    speed:100+Math.random()*60,
+    shootTimer:0.8+Math.random()*1.2
+  });
+}
+setInterval(spawnEnemy,1200);
+
+// EXPLOSION
+function createExplosion(x,y){
+  for(let i=0;i<22;i++){
+    explosions.push({
+      x, y,
+      vx:(Math.random()*2-1)*200,
+      vy:(Math.random()*2-1)*200,
+      life:0.6,
+      r:Math.random()*3+2
     });
   }
 }
-setInterval(spawnEnemy,1500);
 
-function showGameOver(){
-  paused=true;
-  menuTitle.textContent='Game Over';
-  menuSubtitle.textContent='Final Score: '+score;
-  menuExtra.textContent='Click play again to retry';
-  startBtn.textContent='Play Again';
-  menu.style.display='flex';
+// UPDATE LOOP
+function update(dt){
+  if(paused) return;
+
+  // MOVE PLAYER
+  if(keys.left){ player.x-=player.speed*dt; player.tilt=-0.25; }
+  else if(keys.right){ player.x+=player.speed*dt; player.tilt=0.25; }
+  else player.tilt=0;
+
+  player.x=Math.max(30,Math.min(W-30,player.x));
+
+  // THRUSTER PARTICLES
+  particles.push({
+    x:player.x+(Math.random()*20-10),
+    y:player.y+30,
+    vy:150+Math.random()*100,
+    alpha:1,
+    size:2+Math.random()*2
+  });
+
+  // MOVE STARS
+  stars.forEach(s=>{
+    s.y+=s.v*dt;
+    if(s.y>H){ s.y=0; s.x=Math.random()*W; }
+  });
+
+  // MOVE BULLETS
+  bullets.forEach((b,i)=>{
+    b.y+=b.dy*dt;
+    if(b.y<-10) bullets.splice(i,1);
+  });
+
+  // MOVE ENEMIES
+  enemies.forEach((e,i)=>{
+    e.y+=e.speed*dt;
+
+    if(e.y>H+40){ enemies.splice(i,1); return; }
+
+    // enemy shooting
+    e.shootTimer-=dt;
+    if(e.shootTimer<=0){
+      enemyBullets.push({
+        x:e.x+20,
+        y:e.y+30,
+        r:6,
+        dy:380
+      });
+      e.shootTimer=0.8+Math.random()*1.2;
+    }
+
+    // HIT BY PLAYER BULLET
+    bullets.forEach((b,j)=>{
+      if(b.x>e.x && b.x<e.x+e.w && b.y>e.y && b.y<e.y+e.h){
+        bullets.splice(j,1);
+        enemies.splice(i,1);
+        score+=10;
+        player.laserLevel++;
+        document.getElementById("score").textContent="Score: "+score;
+        createExplosion(e.x+20,e.y+20);
+      }
+    });
+  });
+
+  // ENEMY BULLETS
+  enemyBullets.forEach((b,i)=>{
+    b.y+=b.dy*dt;
+    if(b.y>H){ enemyBullets.splice(i,1); return; }
+
+    if(b.x>player.x-20 && b.x<player.x+20 &&
+       b.y>player.y-20 && b.y<player.y+20){
+      enemyBullets.splice(i,1);
+      playerHit();
+    }
+  });
+
+  // PARTICLES
+  particles.forEach((p,i)=>{
+    p.y+=p.vy*dt;
+    p.alpha-=dt*1.5;
+    if(p.alpha<=0) particles.splice(i,1);
+  });
+
+  // EXPLOSIONS
+  explosions.forEach((p,i)=>{
+    p.x+=p.vx*dt;
+    p.y+=p.vy*dt;
+    p.life-=dt;
+    if(p.life<=0) explosions.splice(i,1);
+  });
+
+  if(flashRed>0) flashRed-=dt;
 }
 
+// PLAYER HIT
 function playerHit(){
   player.hits++;
   flashRed=0.2;
-
   hitSound.currentTime=0;
   hitSound.play();
 
@@ -203,102 +318,128 @@ function playerHit(){
     return;
   }
 
-  document.getElementById('lives').textContent='Lives: '+(player.maxHits-player.hits);
+  document.getElementById("lives").textContent="Lives: "+(player.maxHits-player.hits);
 }
 
-function update(dt){
-  if(paused) {
-    // make sure no stuck movement when paused/menu
-    keys.left=false;
-    keys.right=false;
-    return;
-  }
-
-  if(keys.left) player.x-=player.speed*dt;
-  if(keys.right) player.x+=player.speed*dt;
-  player.x=Math.max(20,Math.min(W-20,player.x));
-
-  // player bullets
-  for(let i=bullets.length-1;i>=0;i--){
-    bullets[i].y+=bullets[i].dy*dt;
-    if(bullets[i].y<-10) bullets.splice(i,1);
-  }
-
-  // enemies
-  for(let i=enemies.length-1;i>=0;i--){
-    let e=enemies[i];
-    e.shootTimer-=dt;
-
-    if(e.shootTimer<=0){
-      enemyBullets.push({x:e.x+e.w/2,y:e.y+e.h,r:6,dy:600});
-      e.shootTimer=1+Math.random()*2;
-    }
-
-    // hit enemy
-    for(let j=bullets.length-1;j>=0;j--){
-      let b=bullets[j];
-      if(b.x>e.x && b.x<e.x+e.w && b.y>e.y && b.y<e.y+e.h){
-        bullets.splice(j,1);
-        enemies.splice(i,1);
-        score+=10;
-        player.laserLevel++;
-        document.getElementById('score').textContent='Score: '+score;
-        break;
-      }
-    }
-  }
-
-  // enemy bullets
-  for(let i=enemyBullets.length-1;i>=0;i--){
-    let b=enemyBullets[i];
-    b.y+=b.dy*dt;
-
-    if(b.y>H){
-      enemyBullets.splice(i,1);
-      continue;
-    }
-
-    if(b.x>player.x-20 && b.x<player.x+20 &&
-       b.y>player.y-20 && b.y<player.y+20){
-      enemyBullets.splice(i,1);
-      playerHit();
-    }
-  }
-
-  if(flashRed>0) flashRed=Math.max(0,flashRed-dt);
+// GAME OVER
+function showGameOver(){
+  paused=true;
+  menuTitle.textContent="Game Over";
+  menuSubtitle.textContent="Final Score: "+score;
+  menuExtra.textContent="Tap to play again";
+  startBtn.textContent="Play Again";
+  menu.style.display="flex";
 }
 
+// DRAW LOOP
 function draw(){
   ctx.clearRect(0,0,W,H);
 
+  // FLASH RED
   if(flashRed>0){
-    ctx.fillStyle='rgba(255,0,0,'+flashRed+')';
+    ctx.fillStyle=`rgba(255,0,0,${flashRed})`;
     ctx.fillRect(0,0,W,H);
   }
 
-  // player
-  ctx.fillStyle='#00f';
+  // ⭐ STARS
+  ctx.fillStyle="#ffffff";
+  stars.forEach(s=>{
+    ctx.globalAlpha=s.s/3;
+    ctx.fillRect(s.x,s.y,s.s,s.s);
+  });
+  ctx.globalAlpha=1;
+
+  // 🔥 PARTICLES
+  particles.forEach(p=>{
+    ctx.globalAlpha=p.alpha;
+    ctx.fillStyle="#44ccff";
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+    ctx.fill();
+  });
+  ctx.globalAlpha=1;
+
+  // 🚀 PLAYER SPACESHIP (WITH TILT + FLAMES)
+  ctx.save();
+  ctx.translate(player.x,player.y);
+  ctx.rotate(player.tilt);
+
+  // engine flame
+  ctx.fillStyle="rgba(0,150,255,0.8)";
   ctx.beginPath();
-  ctx.moveTo(player.x,player.y-20);
-  ctx.lineTo(player.x+20,player.y+20);
-  ctx.lineTo(player.x-20,player.y+20);
+  ctx.moveTo(-6,28);
+  ctx.lineTo(6,28);
+  ctx.lineTo(0,45);
   ctx.closePath();
   ctx.fill();
 
-  // player bullets
-  ctx.fillStyle='#ff0';
+  // ship body
+  ctx.fillStyle="#4db8ff";
+  ctx.beginPath();
+  ctx.moveTo(0,-32);
+  ctx.bezierCurveTo(18,-20,22,5,10,28);
+  ctx.bezierCurveTo(3,40,-3,40,-10,28);
+  ctx.bezierCurveTo(-22,5,-18,-20,0,-32);
+  ctx.closePath();
+  ctx.fill();
+
+  // cockpit
+  ctx.fillStyle="#99e6ff";
+  ctx.beginPath();
+  ctx.ellipse(0,-5,10,13,0,0,Math.PI*2);
+  ctx.fill();
+
+  // wings
+  ctx.fillStyle="#3399ff";
+  ctx.beginPath(); ctx.moveTo(-10,0); ctx.lineTo(-40,20); ctx.lineTo(-10,18); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(10,0); ctx.lineTo(40,20); ctx.lineTo(10,18); ctx.closePath(); ctx.fill();
+
+  ctx.restore();
+
+  // 🔫 PLAYER BULLETS
+  ctx.fillStyle="#ffff66";
   bullets.forEach(b=>{
     ctx.beginPath();
     ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
     ctx.fill();
   });
 
-  // enemies
-  ctx.fillStyle='#f00';
-  enemies.forEach(e=>ctx.fillRect(e.x,e.y,e.w,e.h));
+  // 👾 ENEMIES
+  enemies.forEach(e=>{
+    ctx.save();
+    ctx.translate(e.x+20,e.y+20);
 
-  // enemy bullets
-  ctx.fillStyle='#ff69b4';
+    ctx.fillStyle="#ff3333";
+    ctx.beginPath();
+    ctx.moveTo(0,-20);
+    ctx.lineTo(18,15);
+    ctx.lineTo(-18,15);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle="#ff9999";
+    ctx.beginPath();
+    ctx.arc(0,-4,6,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.fillStyle="#cc0000";
+    ctx.fillRect(-26,6,52,6);
+
+    ctx.restore();
+  });
+
+  // 💥 EXPLOSIONS
+  explosions.forEach(p=>{
+    ctx.globalAlpha=p.life;
+    ctx.fillStyle="#ffdd55";
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    ctx.fill();
+  });
+  ctx.globalAlpha=1;
+
+  // ENEMY BULLETS
+  ctx.fillStyle="#ff69b4";
   enemyBullets.forEach(b=>{
     ctx.beginPath();
     ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
@@ -306,37 +447,26 @@ function draw(){
   });
 }
 
+// RESET GAME
 function resetGame(){
-  bullets=[]; enemies=[]; enemyBullets=[];
-  player.x=W/2; player.laserLevel=1; player.hits=0;
   score=0;
+  bullets=[];
+  enemies=[];
+  enemyBullets=[];
+  particles=[];
+  explosions=[];
+  player.x=W/2;
+  player.hits=0;
+  player.laserLevel=1;
+  document.getElementById("score").textContent="Score: 0";
+  document.getElementById("lives").textContent="Lives: 3";
   flashRed=0;
-  keys.left=false;
-  keys.right=false;
-  document.getElementById('score').textContent='Score: 0';
-  document.getElementById('lives').textContent='Lives: 3';
-
-  menuTitle.textContent='Space Shooter';
-  menuSubtitle.textContent='Produced and Developed by Mahd Rashid';
-  menuExtra.textContent='Uata Marques Byron are mad buns';
-  startBtn.textContent='Start Game';
 }
 
-// fake "players online" counter (just for looks)
-let online = 20 + Math.floor(Math.random()*40);
-const onlineEl = document.getElementById('online');
-onlineEl.textContent = 'Players online: '+online;
-
-setInterval(()=>{
-  // random change -3 to +3, keep between 5 and 120
-  let delta = Math.floor(Math.random()*7)-3;
-  online = Math.max(5,Math.min(120, online+delta));
-  onlineEl.textContent = 'Players online: '+online;
-}, 4000);
-
+// GAME LOOP
 let last=0;
 function loop(ts){
-  const dt=(ts-last)/1000; 
+  let dt=(ts-last)/1000;
   last=ts;
   update(dt);
   draw();
@@ -344,9 +474,9 @@ function loop(ts){
 }
 requestAnimationFrame(loop);
 
-window.addEventListener('resize',()=>{
-  W=canvas.width=window.innerWidth;
-  H=canvas.height=window.innerHeight;
+window.addEventListener("resize",()=>{
+  W=canvas.width=innerWidth;
+  H=canvas.height=innerHeight;
 });
 </script>
 </body>
