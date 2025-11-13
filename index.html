@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Blue Spaceship Shooter - Smart Lasers</title>
+<title>Space Shooter</title>
 <style>
 body{margin:0;overflow:hidden;background:black;}
 canvas{display:block;}
@@ -17,8 +17,8 @@ button{margin-left:5px;}
 <div id="score">Score: 0</div>
 <div id="upgrade">Laser Level: 1</div>
 <div id="controls">
-  <button id="pauseBtn">Pause</button>
-  <button id="resumeBtn">Resume</button>
+<button id="pauseBtn">Pause</button>
+<button id="resumeBtn">Resume</button>
 </div>
 <canvas id="game"></canvas>
 <script>
@@ -27,12 +27,12 @@ const ctx=canvas.getContext('2d');
 let W=canvas.width=window.innerWidth;
 let H=canvas.height=window.innerHeight;
 
-const player={x:W/2,y:H-80,w:40,h:40,speed:420,laserLevel:1,hits:0,maxHits:3};
+const player={x:W/2,y:H-80,w:40,h:40,speed:400,laserLevel:1,hits:0,maxHits:3};
 let bullets=[],enemies=[],enemyBullets=[];
 let score=0,paused=false,hitFlash=false;
 
 // Mouse-only shooting
-canvas.addEventListener('mousedown',shoot);
+canvas.addEventListener('mousedown', shoot);
 function shoot(){
   if(paused) return;
   for(let i=-player.laserLevel+1;i<=player.laserLevel-1;i++){
@@ -40,11 +40,11 @@ function shoot(){
   }
 }
 
-// Pause / Resume buttons
+// Pause/Resume buttons
 document.getElementById('pauseBtn').addEventListener('click',()=>paused=true);
 document.getElementById('resumeBtn').addEventListener('click',()=>paused=false);
 
-// Spawn two enemies
+// Spawn enemies
 function spawnEnemy(){
   if(paused) return;
   for(let n=0;n<2;n++){
@@ -53,16 +53,16 @@ function spawnEnemy(){
     enemies.push({x:x,y:50,w:40,h:40,speed:150+Math.random()*150,dir:dir,shootTimer:Math.random()*1});
   }
 }
-setInterval(spawnEnemy,600);
+setInterval(spawnEnemy,1000);
 
 // Update
 function update(dt){
   if(paused) return;
 
-  // Player movement with keys
+  // Player movement
   if(keys.left) player.x -= player.speed*dt;
   if(keys.right) player.x += player.speed*dt;
-  player.x = Math.max(20, Math.min(W-20, player.x));
+  player.x=Math.max(20,Math.min(W-20,player.x));
 
   // Player bullets
   for(let i=bullets.length-1;i>=0;i--){
@@ -72,33 +72,24 @@ function update(dt){
 
   // Enemies
   for(let i=enemies.length-1;i>=0;i--){
-    let e = enemies[i];
+    let e=enemies[i];
     e.x += e.speed*e.dir*dt;
     if(e.x<0||e.x>W-40) e.dir*=-1;
-
     e.shootTimer -= dt;
     if(e.shootTimer<=0){
-      const shotCount = Math.floor(Math.random()*3)+2;
+      const shotCount=Math.floor(Math.random()*3)+2;
       for(let s=0;s<shotCount;s++){
-        enemyBullets.push({
-          x:e.x+e.w/2,
-          y:e.y+e.h,
-          r:6,
-          trackTime:5, // 🔹 track for 5 seconds
-          dx:0,
-          dy:0
-        });
+        enemyBullets.push({x:e.x+e.w/2,y:e.y+e.h,r:6,trackTime:5,dx:0,dy:0});
       }
-      e.shootTimer = 1 + Math.random()*1.2;
+      e.shootTimer=1+Math.random()*1.2;
     }
-
-    // Hit by player bullets
+    // Collision with player bullets
     for(let j=bullets.length-1;j>=0;j--){
-      let b = bullets[j];
-      if(b.x>e.x&&b.x<e.x+e.w && b.y>e.y&&b.y<e.y+e.h){
+      let b=bullets[j];
+      if(b.x>e.x&&b.x<e.x+e.w&&b.y>e.y&&b.y<e.y+e.h){
         bullets.splice(j,1);
         enemies.splice(i,1);
-        score += 10;
+        score+=10;
         player.laserLevel++;
         document.getElementById('score').textContent='Score: '+score;
         document.getElementById('upgrade').textContent='Laser Level: '+player.laserLevel;
@@ -107,7 +98,89 @@ function update(dt){
     }
   }
 
-  // Bullet vs enemy bullet
-  for(let ebi=enemyBullets.length-1;ebi>=0;ebi--){
-    const eb = enemyBullets[ebi];
-    for(let bi=bullets.leng
+  // Enemy bullets
+  for(let i=enemyBullets.length-1;i>=0;i--){
+    let b=enemyBullets[i];
+    if(b.trackTime>0){
+      const dx=player.x-b.x;
+      const dy=player.y-b.y;
+      const dist=Math.sqrt(dx*dx+dy*dy);
+      const speed=150;
+      if(dist>0){b.dx=dx/dist*speed;b.dy=dy/dist*speed;}
+      b.trackTime-=dt;
+    }
+    b.x+=b.dx*dt;b.y+=b.dy*dt;
+
+    if(b.x<0||b.x>W||b.y<0||b.y>H){enemyBullets.splice(i,1);continue;}
+
+    if(b.x>player.x-20&&b.x<player.x+20&&b.y>player.y-20&&b.y<player.y+20){
+      enemyBullets.splice(i,1);
+      player.hits++;
+      hitFlash=true;
+      setTimeout(()=>hitFlash=false,120);
+      if(player.hits>=player.maxHits){resetGame();return;}
+    }
+  }
+}
+
+// Draw
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  if(hitFlash){ctx.fillStyle='rgba(255,0,0,0.25)';ctx.fillRect(0,0,W,H);}
+  // Player
+  ctx.fillStyle='#00f';
+  ctx.beginPath();
+  ctx.moveTo(player.x,player.y-20);
+  ctx.lineTo(player.x+20,player.y+20);
+  ctx.lineTo(player.x-20,player.y+20);
+  ctx.closePath();
+  ctx.fill();
+  // Player bullets
+  ctx.fillStyle='#ff0';
+  bullets.forEach(b=>{ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();});
+  // Enemies
+  ctx.fillStyle='#f00';
+  enemies.forEach(e=>ctx.fillRect(e.x,e.y,e.w,e.h));
+  // Enemy bullets
+  ctx.fillStyle='#ff69b4';
+  enemyBullets.forEach(b=>{ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();});
+}
+
+// Reset
+function resetGame(){
+  bullets=[];enemies=[];enemyBullets=[];
+  player.x=W/2;player.laserLevel=1;player.hits=0;
+  score=0;
+  document.getElementById('score').textContent='Score: 0';
+  document.getElementById('upgrade').textContent='Laser Level: 1';
+}
+
+// Movement keys
+let keys={};
+window.addEventListener('keydown',e=>{
+  if(e.key==='a'||e.key==='ArrowLeft') keys.left=true;
+  if(e.key==='d'||e.key==='ArrowRight') keys.right=true;
+});
+window.addEventListener('keyup',e=>{
+  if(e.key==='a'||e.key==='ArrowLeft') keys.left=false;
+  if(e.key==='d'||e.key==='ArrowRight') keys.right=false;
+});
+
+// Main loop
+let last=0;
+function loop(ts){
+  const dt=(ts-last)/1000;last=ts;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+// Resize
+window.addEventListener('resize',()=>{
+  W=canvas.width=window.innerWidth;
+  H=canvas.height=window.innerHeight;
+});
+</script>
+</body>
+</html>
