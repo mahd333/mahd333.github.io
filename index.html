@@ -4,10 +4,11 @@
 <meta charset="UTF-8">
 <title>Space Shooter</title>
 <style>
-body{margin:0;overflow:hidden;background:black;color:#0f0;font-family:sans-serif}
+body{margin:0;overflow:hidden;background:black;color:#0f0;font-family:sans-serif;touch-action:none;}
 canvas{display:block;width:100vw;height:100vh}
 #hud,#controls,#menu,#touchControls{position:fixed;z-index:10}
 #hud{left:12px;top:12px;font-weight:700;color:#0ff}
+#hud div{margin-bottom:4px;}
 #controls{right:12px;top:12px}
 #menu{
  top:0;left:0;width:100vw;height:100vh;
@@ -19,11 +20,9 @@ button{
  margin-top:10px;padding:8px 14px;border-radius:6px;
  border:0;background:#222;color:#0ff;cursor:pointer
 }
-
-/* mobile touch controls */
 #touchControls{
  bottom:10px;left:50%;transform:translateX(-50%);
- display:none; /* hidden on desktop */
+ display:flex;
  gap:12px;
 }
 #touchControls button{
@@ -33,11 +32,6 @@ button{
  font-size:24px;
  background:rgba(20,20,20,0.85);
  border:2px solid #0ff;
-}
-
-/* show touch controls on smaller screens */
-@media (max-width: 900px){
-  #touchControls{display:flex;}
 }
 </style>
 </head>
@@ -55,6 +49,7 @@ button{
 <div id="hud">
   <div id="score">Score: 0</div>
   <div id="lives">Lives: 3</div>
+  <div id="online">Players online: 37</div>
 </div>
 
 <!-- Controls -->
@@ -63,7 +58,7 @@ button{
   <button id="resumeBtn">Resume</button>
 </div>
 
-<!-- Touch Controls (mobile) -->
+<!-- Touch Controls (works on PC + mobile) -->
 <div id="touchControls">
   <button id="leftBtn">◀</button>
   <button id="fireBtn">●</button>
@@ -90,16 +85,20 @@ let flashRed=0;
 const player={x:W/2,y:H-80,w:40,h:40,speed:400,laserLevel:1,hits:0,maxHits:3};
 
 const keys={left:false,right:false};
-window.addEventListener('keydown',e=>{
-  if(e.key==='a') keys.left=true;
-  if(e.key==='d') keys.right=true;
+
+// more reliable keyboard handling
+document.addEventListener('keydown',e=>{
+  const k=e.key;
+  if(k==='a'||k==='A'||k==='ArrowLeft'){ keys.left=true; }
+  if(k==='d'||k==='D'||k==='ArrowRight'){ keys.right=true; }
 });
-window.addEventListener('keyup',e=>{
-  if(e.key==='a') keys.left=false;
-  if(e.key==='d') keys.right=false;
+document.addEventListener('keyup',e=>{
+  const k=e.key;
+  if(k==='a'||k==='A'||k==='ArrowLeft'){ keys.left=false; }
+  if(k==='d'||k==='D'||k==='ArrowRight'){ keys.right=false; }
 });
 
-// shoot function (used by mouse + touch)
+// --- SHOOT FUNCTION (mouse + buttons) ---
 function shoot(){
   if(paused) return;
   for(let i=-player.laserLevel+1;i<=player.laserLevel-1;i++){
@@ -107,29 +106,40 @@ function shoot(){
   }
 }
 
-// Mouse Shooting (desktop)
-canvas.addEventListener('mousedown',shoot);
+// Mouse click on canvas to shoot
+canvas.addEventListener('pointerdown',e=>{
+  if(paused) return;
+  // only shoot if user clicked on the canvas area, not a UI element
+  shoot();
+});
 
-// Touch controls (mobile)
+// Touch/Pointer buttons
 const leftBtn=document.getElementById('leftBtn');
 const rightBtn=document.getElementById('rightBtn');
 const fireBtn=document.getElementById('fireBtn');
 
-function bindHold(btn, keyProp){
-  const down = (e)=>{e.preventDefault();keys[keyProp]=true;};
-  const up   = (e)=>{e.preventDefault();keys[keyProp]=false;};
-  btn.addEventListener('touchstart',down);
-  btn.addEventListener('touchend',up);
-  btn.addEventListener('touchcancel',up);
-  btn.addEventListener('pointerdown',down);
-  btn.addEventListener('pointerup',up);
+function bindPointerHold(btn, keyProp){
+  btn.addEventListener('pointerdown',e=>{
+    e.preventDefault();
+    keys[keyProp]=true;
+  });
+  btn.addEventListener('pointerup',e=>{
+    e.preventDefault();
+    keys[keyProp]=false;
+  });
+  btn.addEventListener('pointerleave',e=>{
+    e.preventDefault();
+    keys[keyProp]=false;
+  });
 }
 
-bindHold(leftBtn,'left');
-bindHold(rightBtn,'right');
+bindPointerHold(leftBtn,'left');
+bindPointerHold(rightBtn,'right');
 
-fireBtn.addEventListener('touchstart',e=>{e.preventDefault();shoot();});
-fireBtn.addEventListener('pointerdown',e=>{e.preventDefault();shoot();});
+fireBtn.addEventListener('pointerdown',e=>{
+  e.preventDefault();
+  shoot();
+});
 
 const hitSound=document.getElementById('hitSound');
 const menu=document.getElementById('menu');
@@ -139,7 +149,8 @@ const menuExtra=document.getElementById('menuExtra');
 const startBtn=document.getElementById('startBtn');
 
 // Start / Play Again button
-startBtn.addEventListener('click',()=>{
+startBtn.addEventListener('pointerdown',e=>{
+  e.preventDefault();
   menu.style.display='none';
   paused=false;
   resetGame();
@@ -148,8 +159,14 @@ startBtn.addEventListener('click',()=>{
 });
 
 // pause / resume
-document.getElementById('pauseBtn').addEventListener('click',()=>paused=true);
-document.getElementById('resumeBtn').addEventListener('click',()=>paused=false);
+document.getElementById('pauseBtn').addEventListener('pointerdown',e=>{
+  e.preventDefault();
+  paused=true;
+});
+document.getElementById('resumeBtn').addEventListener('pointerdown',e=>{
+  e.preventDefault();
+  paused=false;
+});
 
 // enemies
 function spawnEnemy(){
@@ -190,7 +207,12 @@ function playerHit(){
 }
 
 function update(dt){
-  if(paused) return;
+  if(paused) {
+    // make sure no stuck movement when paused/menu
+    keys.left=false;
+    keys.right=false;
+    return;
+  }
 
   if(keys.left) player.x-=player.speed*dt;
   if(keys.right) player.x+=player.speed*dt;
@@ -243,7 +265,7 @@ function update(dt){
     }
   }
 
-  if(flashRed>0) flashRed-=dt;
+  if(flashRed>0) flashRed=Math.max(0,flashRed-dt);
 }
 
 function draw(){
@@ -289,15 +311,28 @@ function resetGame(){
   player.x=W/2; player.laserLevel=1; player.hits=0;
   score=0;
   flashRed=0;
+  keys.left=false;
+  keys.right=false;
   document.getElementById('score').textContent='Score: 0';
   document.getElementById('lives').textContent='Lives: 3';
 
-  // reset menu text for fresh start
   menuTitle.textContent='Space Shooter';
   menuSubtitle.textContent='Produced and Developed by Mahd Rashid';
   menuExtra.textContent='Uata Marques Byron are mad buns';
   startBtn.textContent='Start Game';
 }
+
+// fake "players online" counter (just for looks)
+let online = 20 + Math.floor(Math.random()*40);
+const onlineEl = document.getElementById('online');
+onlineEl.textContent = 'Players online: '+online;
+
+setInterval(()=>{
+  // random change -3 to +3, keep between 5 and 120
+  let delta = Math.floor(Math.random()*7)-3;
+  online = Math.max(5,Math.min(120, online+delta));
+  onlineEl.textContent = 'Players online: '+online;
+}, 4000);
 
 let last=0;
 function loop(ts){
