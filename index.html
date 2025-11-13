@@ -140,14 +140,18 @@ bind(leftBtn, "left");
 bind(rightBtn, "right");
 fireBtn.addEventListener("pointerdown", shoot);
 
-// Online counter
-let online = Math.floor(Math.random()*140)+10;
-onlineEl.textContent = "Players Online: "+online;
-setInterval(()=>{
-  online += Math.floor(Math.random()*10)-5;
-  online = Math.max(10, Math.min(150, online));
-  onlineEl.textContent = "Players Online: "+online;
-}, 3000);
+// ✅ Online counter 860–900
+function getFakePlayersOnline(){
+  // random number between 860 and 900
+  return Math.floor(Math.random() * (900 - 860 + 1)) + 860;
+}
+function updatePlayersOnline(){
+  onlineEl.textContent = "Players Online: " + getFakePlayersOnline();
+}
+// set once at start
+updatePlayersOnline();
+// change every few seconds so it looks real
+setInterval(updatePlayersOnline, 3500);
 
 // Stars
 for(let i=0;i<200;i++){
