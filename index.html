@@ -6,32 +6,75 @@
 <style>
 body{margin:0;overflow:hidden;background:black;color:#0f0;font-family:sans-serif}
 canvas{display:block;width:100vw;height:100vh}
-#hud,#controls,#menu{position:fixed;z-index:10}
-#hud{left:12px;top:12px;font-weight:700}
+#hud,#controls,#menu,#touchControls{position:fixed;z-index:10}
+#hud{left:12px;top:12px;font-weight:700;color:#0ff}
 #controls{right:12px;top:12px}
-#menu{top:0;left:0;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);flex-direction:column;color:#0ff;font-size:24px;text-align:center}
-button{margin-top:10px;padding:8px 14px;border-radius:6px;border:0;background:#222;color:#0ff;cursor:pointer}
+#menu{
+ top:0;left:0;width:100vw;height:100vh;
+ display:flex;align-items:center;justify-content:center;
+ background:rgba(0,0,0,0.85);
+ flex-direction:column;color:#0ff;font-size:24px;text-align:center
+}
+button{
+ margin-top:10px;padding:8px 14px;border-radius:6px;
+ border:0;background:#222;color:#0ff;cursor:pointer
+}
+
+/* mobile touch controls */
+#touchControls{
+ bottom:10px;left:50%;transform:translateX(-50%);
+ display:none; /* hidden on desktop */
+ gap:12px;
+}
+#touchControls button{
+ margin-top:0;
+ width:70px;height:70px;
+ border-radius:50%;
+ font-size:24px;
+ background:rgba(20,20,20,0.85);
+ border:2px solid #0ff;
+}
+
+/* show touch controls on smaller screens */
+@media (max-width: 900px){
+  #touchControls{display:flex;}
+}
 </style>
 </head>
 <body>
+
+<!-- Start / Game Over Menu -->
 <div id="menu">
-  <div>Space Shooter</div>
-  <div>Produced and Developed by Mahd Rashid</div>
-  <div>Uata Marques Byron are mad buns</div>
+  <div id="menuTitle">Space Shooter</div>
+  <div id="menuSubtitle">Produced and Developed by Mahd Rashid</div>
+  <div id="menuExtra">Uata Marques Byron are mad buns</div>
   <button id="startBtn">Start Game</button>
 </div>
 
+<!-- HUD -->
 <div id="hud">
   <div id="score">Score: 0</div>
   <div id="lives">Lives: 3</div>
 </div>
 
+<!-- Controls -->
 <div id="controls">
   <button id="pauseBtn">Pause</button>
   <button id="resumeBtn">Resume</button>
 </div>
 
+<!-- Touch Controls (mobile) -->
+<div id="touchControls">
+  <button id="leftBtn">◀</button>
+  <button id="fireBtn">●</button>
+  <button id="rightBtn">▶</button>
+</div>
+
+<!-- Game Canvas -->
 <canvas id="game"></canvas>
+
+<!-- FAAAAHHH Sound -->
+<audio id="hitSound" src="https://files.catbox.moe/f7rg41.mp3"></audio>
 
 <script>
 const canvas=document.getElementById('game');
@@ -39,78 +82,137 @@ const ctx=canvas.getContext('2d');
 let W=canvas.width=window.innerWidth;
 let H=canvas.height=window.innerHeight;
 
-// Game state
 let paused=false;
 let score=0;
-let bullets=[],enemies=[],enemyBullets=[];
+let bullets=[], enemies=[], enemyBullets=[];
+let flashRed=0;
 
-// Player
 const player={x:W/2,y:H-80,w:40,h:40,speed:400,laserLevel:1,hits:0,maxHits:3};
 
-// Input
 const keys={left:false,right:false};
 window.addEventListener('keydown',e=>{
-  if(e.key==='a'||e.key==='A') keys.left=true;
-  if(e.key==='d'||e.key==='D') keys.right=true;
+  if(e.key==='a') keys.left=true;
+  if(e.key==='d') keys.right=true;
 });
 window.addEventListener('keyup',e=>{
-  if(e.key==='a'||e.key==='A') keys.left=false;
-  if(e.key==='d'||e.key==='D') keys.right=false;
+  if(e.key==='a') keys.left=false;
+  if(e.key==='d') keys.right=false;
 });
 
-// Mouse shoot
-canvas.addEventListener('mousedown',()=>{
+// shoot function (used by mouse + touch)
+function shoot(){
   if(paused) return;
   for(let i=-player.laserLevel+1;i<=player.laserLevel-1;i++){
     bullets.push({x:player.x+i*10,y:player.y-20,r:5,dy:-600});
   }
+}
+
+// Mouse Shooting (desktop)
+canvas.addEventListener('mousedown',shoot);
+
+// Touch controls (mobile)
+const leftBtn=document.getElementById('leftBtn');
+const rightBtn=document.getElementById('rightBtn');
+const fireBtn=document.getElementById('fireBtn');
+
+function bindHold(btn, keyProp){
+  const down = (e)=>{e.preventDefault();keys[keyProp]=true;};
+  const up   = (e)=>{e.preventDefault();keys[keyProp]=false;};
+  btn.addEventListener('touchstart',down);
+  btn.addEventListener('touchend',up);
+  btn.addEventListener('touchcancel',up);
+  btn.addEventListener('pointerdown',down);
+  btn.addEventListener('pointerup',up);
+}
+
+bindHold(leftBtn,'left');
+bindHold(rightBtn,'right');
+
+fireBtn.addEventListener('touchstart',e=>{e.preventDefault();shoot();});
+fireBtn.addEventListener('pointerdown',e=>{e.preventDefault();shoot();});
+
+const hitSound=document.getElementById('hitSound');
+const menu=document.getElementById('menu');
+const menuTitle=document.getElementById('menuTitle');
+const menuSubtitle=document.getElementById('menuSubtitle');
+const menuExtra=document.getElementById('menuExtra');
+const startBtn=document.getElementById('startBtn');
+
+// Start / Play Again button
+startBtn.addEventListener('click',()=>{
+  menu.style.display='none';
+  paused=false;
+  resetGame();
+  hitSound.currentTime=0;
+  hitSound.play();
 });
 
-// Pause/Resume
+// pause / resume
 document.getElementById('pauseBtn').addEventListener('click',()=>paused=true);
 document.getElementById('resumeBtn').addEventListener('click',()=>paused=false);
 
-// Start game button
-const menu=document.getElementById('menu');
-document.getElementById('startBtn').addEventListener('click',()=>{
-  menu.style.display='none';
-  resetGame();
-});
-
-// Spawn enemies
+// enemies
 function spawnEnemy(){
   if(paused) return;
   for(let n=0;n<2;n++){
     const x=Math.random()*(W-50)+25;
-    enemies.push({x:x,y:50,w:40,h:40,speed:100+Math.random()*100,shootTimer:1+Math.random()*2});
+    enemies.push({
+      x:x,y:50,w:40,h:40,
+      speed:100+Math.random()*100,
+      shootTimer:1+Math.random()*2
+    });
   }
 }
 setInterval(spawnEnemy,1500);
 
-// Update
+function showGameOver(){
+  paused=true;
+  menuTitle.textContent='Game Over';
+  menuSubtitle.textContent='Final Score: '+score;
+  menuExtra.textContent='Click play again to retry';
+  startBtn.textContent='Play Again';
+  menu.style.display='flex';
+}
+
+function playerHit(){
+  player.hits++;
+  flashRed=0.2;
+
+  hitSound.currentTime=0;
+  hitSound.play();
+
+  if(player.hits>=player.maxHits){
+    showGameOver();
+    return;
+  }
+
+  document.getElementById('lives').textContent='Lives: '+(player.maxHits-player.hits);
+}
+
 function update(dt){
   if(paused) return;
 
-  // Player move
   if(keys.left) player.x-=player.speed*dt;
   if(keys.right) player.x+=player.speed*dt;
   player.x=Math.max(20,Math.min(W-20,player.x));
 
-  // Player bullets
+  // player bullets
   for(let i=bullets.length-1;i>=0;i--){
     bullets[i].y+=bullets[i].dy*dt;
     if(bullets[i].y<-10) bullets.splice(i,1);
   }
 
-  // Enemies
+  // enemies
   for(let i=enemies.length-1;i>=0;i--){
     let e=enemies[i];
     e.shootTimer-=dt;
+
     if(e.shootTimer<=0){
-      enemyBullets.push({x:e.x+e.w/2,y:e.y+e.h,r:6,dy:600}); // 2x speed
+      enemyBullets.push({x:e.x+e.w/2,y:e.y+e.h,r:6,dy:600});
       e.shootTimer=1+Math.random()*2;
     }
-    // Collision with player bullets
+
+    // hit enemy
     for(let j=bullets.length-1;j>=0;j--){
       let b=bullets[j];
       if(b.x>e.x && b.x<e.x+e.w && b.y>e.y && b.y<e.y+e.h){
@@ -124,26 +226,35 @@ function update(dt){
     }
   }
 
-  // Enemy bullets
+  // enemy bullets
   for(let i=enemyBullets.length-1;i>=0;i--){
     let b=enemyBullets[i];
     b.y+=b.dy*dt;
-    if(b.y>H) enemyBullets.splice(i,1);
 
-    if(b.x>player.x-20 && b.x<player.x+20 && b.y>player.y-20 && b.y<player.y+20){
+    if(b.y>H){
       enemyBullets.splice(i,1);
-      player.hits++;
-      if(player.hits>=player.maxHits){resetGame();return;}
-      document.getElementById('lives').textContent='Lives: '+(player.maxHits-player.hits);
+      continue;
+    }
+
+    if(b.x>player.x-20 && b.x<player.x+20 &&
+       b.y>player.y-20 && b.y<player.y+20){
+      enemyBullets.splice(i,1);
+      playerHit();
     }
   }
+
+  if(flashRed>0) flashRed-=dt;
 }
 
-// Draw
 function draw(){
   ctx.clearRect(0,0,W,H);
 
-  // Player (blue spaceship)
+  if(flashRed>0){
+    ctx.fillStyle='rgba(255,0,0,'+flashRed+')';
+    ctx.fillRect(0,0,W,H);
+  }
+
+  // player
   ctx.fillStyle='#00f';
   ctx.beginPath();
   ctx.moveTo(player.x,player.y-20);
@@ -152,39 +263,52 @@ function draw(){
   ctx.closePath();
   ctx.fill();
 
-  // Player bullets
+  // player bullets
   ctx.fillStyle='#ff0';
-  bullets.forEach(b=>{ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();});
+  bullets.forEach(b=>{
+    ctx.beginPath();
+    ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
+    ctx.fill();
+  });
 
-  // Enemies (red)
+  // enemies
   ctx.fillStyle='#f00';
   enemies.forEach(e=>ctx.fillRect(e.x,e.y,e.w,e.h));
 
-  // Enemy bullets (pink)
+  // enemy bullets
   ctx.fillStyle='#ff69b4';
-  enemyBullets.forEach(b=>{ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();});
+  enemyBullets.forEach(b=>{
+    ctx.beginPath();
+    ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
+    ctx.fill();
+  });
 }
 
-// Reset
 function resetGame(){
   bullets=[]; enemies=[]; enemyBullets=[];
   player.x=W/2; player.laserLevel=1; player.hits=0;
   score=0;
+  flashRed=0;
   document.getElementById('score').textContent='Score: 0';
   document.getElementById('lives').textContent='Lives: 3';
+
+  // reset menu text for fresh start
+  menuTitle.textContent='Space Shooter';
+  menuSubtitle.textContent='Produced and Developed by Mahd Rashid';
+  menuExtra.textContent='Uata Marques Byron are mad buns';
+  startBtn.textContent='Start Game';
 }
 
-// Loop
 let last=0;
 function loop(ts){
-  const dt=(ts-last)/1000; last=ts;
+  const dt=(ts-last)/1000; 
+  last=ts;
   update(dt);
   draw();
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
 
-// Resize
 window.addEventListener('resize',()=>{
   W=canvas.width=window.innerWidth;
   H=canvas.height=window.innerHeight;
