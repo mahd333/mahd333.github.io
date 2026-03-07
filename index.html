@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Soccer Skip – Stadium Edition</title>
+  <style>
+    body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Arial, sans-serif; background: #1c6b46; }
+    #game { width: 100vw; height: 100vh; position: relative; display: none; background: #2e8b57; overflow: hidden; }
+    
+    /* Crowd Styling */
+    .crowd-row { position: absolute; width: 100%; height: 50px; display: flex; justify-content: space-around; align-items: flex-end; z-index: 1; pointer-events: none; }
+    .crowd-top { top: 5px; }
+    .crowd-bottom { bottom: 5px; }
+    .fan { width: 18px; height: 25px; background: #555; border-radius: 8px 8px 0 0; position: relative; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    .fan::after { content: ''; position: absolute; top: -12px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #ffdbac; }
+    .fan.cheer { transform: translateY(-25px) scale(1.2); }
+    
+    #field { position: absolute; width: 100%; height: 100%; border: 5px solid white; box-sizing: border-box; }
+    #field::before { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 5px; background: white; transform: translateX(-50%); }
+    #field::after { content: ''; position: absolute; left: 50%; top: 50%; width: 150px; height: 150px; border: 5px solid white; border-radius: 50%; transform: translate(-50%, -50%); }
+    
+    #ball { width: 40px; height: 40px; background: radial-gradient(circle at 30% 30%, #fff 40%, #000 41%, #fff 50%, #000 51%, #fff 60%); border-radius: 50%; position: absolute; box-shadow: 0 4px 10px rgba(0,0,0,0.5); cursor: pointer; z-index: 10; }
+    .defender { width: 45px; height: 45px; background: #d32f2f; border: 3px solid #b71c1c; border-radius: 50%; position: absolute; z-index: 5; }
+    
+    #goal { width: 80px; height: 180px; border: 8px solid white; border-right: none; position: absolute; right: 0; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.2); }
+    #ui { position: absolute; top: 20px; left: 20px; color: white; font-size: 24px; font-weight: bold; z-index: 20; text-shadow: 2px 2px #000; display: flex; align-items: center; gap: 20px; }
+    
+    #startScreen, #retryScreen { position: absolute; width: 100%; height: 100%; z-index: 100; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; text-align: center; }
+    #retryScreen { display: none; background: rgba(139, 0, 0, 0.9); }
+    
+    button { padding: 15px 40px; font-size: 22px; cursor: pointer; border: none; border-radius: 50px; margin-top: 20px; background: #fff; color: #1c6b46; font-weight: bold; transition: 0.2s; }
+    button:hover { transform: scale(1.1); background: #3cba54; color: white; }
+    .mute-btn { padding: 8px 15px; font-size: 14px; margin-top: 0; background: rgba(255,255,255,0.2); border: 1px solid white; color: white; }
+
+    @keyframes goalAnimation { 0% {transform: scale(1);} 50% {transform: scale(1.5); filter: brightness(2);} 100% {transform: scale(1);} }
+  </style>
+</head>
+<body>
+
+<audio id="bgMusic" loop>
+  <source src="https://www.soundhelix.com" type="audio/mpeg">
+</audio>
+<audio id="cheerSound">
+  <source src="https://assets.mixkit.co" type="audio/mpeg">
+</audio>
+
+<div id="startScreen">
+  <h1>SOCCER SKIP ⚽</h1>
+  <p>Raindance Stadium – Pro AI Active</p>
+  <button onclick="startGame()">Kick Off</button>
+</div>
+
+<div id="retryScreen">
+  <h1>CAUGHT BY THE DEFENCE! 🛑</h1>
+  <button onclick="retryLevel()">Try Again</button>
+</div>
+
+<div id="game">
+  <div class="crowd-row crowd-top" id="crowdTop"></div>
+  <div id="ui">
+    Level: <span id="level">1</span>
+    <button class="mute-btn" onclick="toggleMute()">Mute 🔊</button>
+  </div>
+  <div id="field"></div>
+  <div id="ball"></div>
+  <div id="goal"></div>
+  <div class="crowd-row crowd-bottom" id="crowdBottom"></div>
+</div>
+
+<script>
+const game = document.getElementById("game");
+const ball = document.getElementById("ball");
+const bgMusic = document.getElementById("bgMusic");
+const cheerSound = document.getElementById("cheerSound");
+const levelText = document.getElementById("level");
+const startScreen = document.getElementById("startScreen");
+const retryScreen = document.getElementById("retryScreen");
+
+let defenders = [], defenderData = [];
+let level = 1, gameRunning = false, canScore = true;
+let ballX = 60, ballY = window.innerHeight / 2;
+let prevBallX = 60, prevBallY = window.innerHeight / 2; 
+let keys = {}, dragging = false, offsetX = 0, offsetY = 0;
+
+ball.addEventListener("mousedown", e => { dragging = true; offsetX = e.offsetX; offsetY = e.offsetY; });
+document.addEventListener("mouseup", () => dragging = false);
+document.addEventListener("mousemove", e => { 
+    if (dragging) { 
+        prevBallX = ballX; prevBallY = ballY;
+        ballX = e.clientX - offsetX; ballY = e.clientY - offsetY; 
+        limitBall(); 
+    } 
+});
+document.addEventListener("keydown", e => keys[e.key] = true);
+document.addEventListener("keyup", e => keys[e.key] = false);
+
+function toggleMute() {
+  bgMusic.muted = !bgMusic.muted;
+  cheerSound.muted = !cheerSound.muted;
+  document.querySelector(".mute-btn").innerText = bgMusic.muted ? "Unmute 🔇" : "Mute 🔊";
+}
+
+function createFans() {
+  const top = document.getElementById('crowdTop');
+  const bottom = document.getElementById('crowdBottom');
+  top.innerHTML = ''; bottom.innerHTML = '';
+  const colors = ['#d32f2f', '#1976d2', '#fbc02d', '#388e3c', '#7b1fa2'];
+  for(let i=0; i<40; i++) {
+    [top, bottom].forEach(row => {
+      let fan = document.createElement('div');
+      fan.className = 'fan';
+      fan.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+      row.appendChild(fan);
+    });
+  }
+}
+
+function makeCrowdCheer() {
+  cheerSound.currentTime = 0;
+  cheerSound.play();
+  document.querySelectorAll('.fan').forEach(fan => {
+    setTimeout(() => fan.classList.add('cheer'), Math.random() * 300);
+    setTimeout(() => fan.classList.remove('cheer'), 1000 + Math.random() * 500);
+  });
+}
+
+function startGame() {
+  startScreen.style.display = "none";
+  game.style.display = "block";
+  bgMusic.play().catch(() => console.log("Audio blocked"));
+  createFans();
+  level = 1;
+  loadLevel();
+  gameRunning = true;
+  requestAnimationFrame(gameLoop);
+}
+
+function retryLevel() {
+  retryScreen.style.display = "none";
+  loadLevel();
+  gameRunning = true;
+  requestAnimationFrame(gameLoop);
+}
+
+function loadLevel() {
+  levelText.innerText = level;
+  canScore = true;
+  defenders.forEach(d => d.remove());
+  defenders = []; defenderData = [];
+  
+  let count = Math.min(level + 2, 12);
+  for (let i = 0; i < count; i++) {
+    let d = document.createElement("div");
+    d.className = "defender";
+    let dx = 400 + Math.random() * (window.innerWidth - 500);
+    let dy = Math.random() * (window.innerHeight - 50);
+    d.style.left = dx + "px"; d.style.top = dy + "px";
+    game.appendChild(d);
+    defenders.push(d);
+    
+    let role = (i === 0) ? "keeper" : (i < 3 ? "sweeper" : "striker");
+    defenderData.push({ 
+        x: dx, y: dy, role: role,
+        speed: (role === "keeper" ? 2.5 : 1.5 + Math.random()) + (level * 0.15),
+        prediction: role === "striker" ? 40 : 10 
+    });
+  }
+  resetBall();
+}
+
+function resetBall() {
+  ballX = 80; ballY = window.innerHeight / 2;
+  prevBallX = ballX; prevBallY = ballY;
+}
+
+function limitBall() {
+  ballX = Math.max(0, Math.min(window.innerWidth - 40, ballX));
+  ballY = Math.max(0, Math.min(window.innerHeight - 40, ballY));
+}
+
+function moveBall() {
+  prevBallX = ballX; prevBallY = ballY;
+  if (!dragging) {
+    let speed = 7;
+    if (keys["ArrowUp"] || keys["w"]) ballY -= speed;
+    if (keys["ArrowDown"] || keys["s"]) ballY += speed;
+    if (keys["ArrowLeft"] || keys["a"]) ballX -= speed;
+    if (keys["ArrowRight"] || keys["d"]) ballX += speed;
+  }
+  limitBall();
+  ball.style.left = ballX + "px"; ball.style.top = ballY + "px";
+}
+
+function moveDefenders() {
+  let velX = ballX - prevBallX;
+  let velY = ballY - prevBallY;
+  let goal = document.getElementById("goal").getBoundingClientRect();
+
+  defenders.forEach((d, i) => {
+    let data = defenderData[i];
+    let targetX, targetY;
+
+    if (data.role === "keeper") {
+      targetX = window.innerWidth - 130;
+      targetY = Math.max(goal.top, Math.min(goal.bottom - 45, ballY));
+    } else if (data.role === "sweeper") {
+      targetX = (ballX + window.innerWidth) / 2;
+      targetY = ballY;
+    } else {
+      targetX = ballX + (velX * data.prediction);
+      targetY = ballY + (velY * data.prediction);
+    }
+
+    let dx = targetX - data.x;
+    let dy = targetY - data.y;
+    let dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist > 1) {
+      let moveX = (dx / dist) * data.speed;
+      let moveY = (dy / dist) * data.speed;
+
+      defenders.forEach((other, j) => {
+        if (i === j) return;
+        let od = defenderData[j];
+        let sDist = Math.sqrt((data.x - od.x)**2 + (data.y - od.y)**2);
+        if (sDist < 55) {
+            moveX += (data.x - od.x) / sDist * 0.8;
+            moveY += (data.y - od.y) / sDist * 0.8;
+        }
+      });
+      data.x += moveX;
+      data.y += moveY;
+    }
+    d.style.left = data.x + "px"; d.style.top = data.y + "px";
+  });
+}
+
+function checkCollision() {
+  let br = ball.getBoundingClientRect();
+  let padding = 8; 
+  for (let d of defenders) {
+    let dr = d.getBoundingClientRect();
+    if (br.left + padding < dr.right - padding && 
+        br.right - padding > dr.left + padding && 
+        br.top + padding < dr.bottom - padding && 
+        br.bottom - padding > dr.top + padding) {
+      gameRunning = false;
+      retryScreen.style.display = "flex";
+    }
+  }
+}
+
+function checkGoal() {
+  if (!canScore) return;
+  let br = ball.getBoundingClientRect();
+  let gr = document.getElementById("goal").getBoundingClientRect();
+  if (br.left < gr.right && br.right > gr.left && br.top < gr.bottom && br.bottom > gr.top) {
+    canScore = false;
+    makeCrowdCheer();
+    ball.style.animation = "goalAnimation 0.5s ease";
+    setTimeout(() => {
+      ball.style.animation = "";
+      level++;
+      loadLevel();
+    }, 500);
+  }
+}
+
+function gameLoop() {
+  if (!gameRunning) return;
+  moveBall();
+  moveDefenders();
+  checkCollision();
+  checkGoal();
+  requestAnimationFrame(gameLoop);
+}
+</script>
+</body>
+</html>
