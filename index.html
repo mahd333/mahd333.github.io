@@ -3,193 +3,198 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Elite Soccer League - Iced Studios</title>
+    <title>Elite Soccer - Iced Studios</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #0e3012; font-family: 'Trebuchet MS', sans-serif; }
-        #game { 
-            display: none; width: 100vw; height: 100vh; position: relative; 
-            background: #27ae60;
-            background-image: 
-                linear-gradient(rgba(255,255,255,0.1) 2px, transparent 2px),
-                linear-gradient(90deg, rgba(255,255,255,0.1) 2px, transparent 2px);
-            background-size: 100px 100px;
-            border: 10px solid white; box-sizing: border-box;
-        }
-        #centerLine { position: absolute; left: 50%; top: 0; bottom: 0; width: 4px; background: rgba(255,255,255,0.5); }
-        #centerCircle { 
-            position: absolute; left: 50%; top: 50%; width: 200px; height: 200px; 
-            border: 4px solid rgba(255,255,255,0.5); border-radius: 50%; transform: translate(-50%, -50%); 
-        }
-        #ball {
-            width: 35px; height: 35px; background: white; border-radius: 50%;
-            position: absolute; cursor: grab; z-index: 10;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
-            background: radial-gradient(circle at 30% 30%, #ffffff, #888);
-            border: 2px solid #222;
-        }
-        .defender, #goalie {
-            width: 48px; height: 48px; position: absolute; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: bold; color: white; border: 3px solid rgba(0,0,0,0.3);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.4); text-shadow: 1px 1px 2px #000;
-        }
+        body { margin: 0; overflow: hidden; background: #0e3012; font-family: 'Trebuchet MS', sans-serif; color: white; }
+        #game { display: none; width: 100vw; height: 100vh; position: relative; background: #27ae60; border: 10px solid white; box-sizing: border-box; }
+        #ball { width: 35px; height: 35px; background: radial-gradient(circle at 30% 30%, #fff, #888); border-radius: 50%; position: absolute; cursor: grab; z-index: 10; border: 2px solid #222; }
+        .defender, #goalie { width: 48px; height: 48px; position: absolute; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 3px solid rgba(0,0,0,0.3); }
         .defender { background: linear-gradient(135deg, #ff4b2b, #ff416c); }
         #goalie { background: linear-gradient(135deg, #f9d423, #ff4e50); width: 55px; height: 55px; }
-        #goal {
-            width: 70px; height: 260px; background: rgba(255,255,255,0.15);
-            border: 8px solid white; border-right: none;
-            position: absolute; right: 0; top: calc(50% - 130px);
-            box-shadow: -10px 0 30px rgba(255,255,255,0.2);
-        }
-        .screen {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
-            display: flex; flex-direction: column; align-items: center;
-            justify-content: center; color: white; z-index: 100; text-align: center;
-        }
-        button {
-            padding: 18px 50px; font-size: 1.5rem; cursor: pointer;
-            background: #f1c40f; color: #000; border: none; border-radius: 50px; 
-            margin-top: 20px; font-weight: bold; transition: 0.3s;
-        }
-        button:hover { background: #fff; transform: translateY(-3px); box-shadow: 0 10px 20px rgba(241,196,15,0.4); }
-        #ui { 
-            position: fixed; top: 25px; left: 30px; color: white; z-index: 50;
-            display: flex; gap: 40px; font-size: 1.6rem; font-weight: bold;
-            text-shadow: 2px 2px 5px #000;
-        }
-        #timerDisplay { color: #f1c40f; }
-        @keyframes goalFlash { 0% { background: white; } 100% { background: #27ae60; } }
+        #goal { width: 70px; height: 260px; border: 8px solid white; border-right: none; position: absolute; right: 0; top: calc(50% - 130px); background: rgba(255,255,255,0.1); }
+        .screen { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; text-align: center; }
+        button { padding: 15px 40px; font-size: 1.2rem; cursor: pointer; background: #f1c40f; border: none; border-radius: 50px; font-weight: bold; margin-top: 15px; }
+        #ui { position: fixed; top: 20px; left: 30px; z-index: 50; display: flex; gap: 25px; font-size: 1.2rem; font-weight: bold; width: 95%; align-items: center; }
+        #leaderboardList { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; width: 300px; margin-top: 20px; }
+        .leader-entry { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
     </style>
 </head>
 <body>
 
     <div id="ui">
-        <div>🏆 LEVEL: <span id="level">1</span></div>
+        <div>🏆 LVL: <span id="level">1</span></div>
         <div>⚽ SCORE: <span id="score">0</span></div>
-        <div>⏱️ TIME: <span id="timerDisplay">30</span>s</div>
+        <div style="color: #f1c40f;">⭐ BEST: <span id="bestScore">0</span></div>
     </div>
 
     <div id="startScreen" class="screen">
-        <h1 style="font-size: 3.5rem; margin-bottom: 0;">AN ICED PRODUCTION</h1>
-        <p style="color: #00d4ff; letter-spacing: 2px; font-weight: bold; margin-top: 10px;">ICED STUDIOS ™</p>
-        <p style="color: #aaa; font-style: italic;">Powering Entertainment</p>
-        <button onclick="startGame()">KICK OFF</button>
+        <h1>AN ICED PRODUCTION</h1>
+        <p style="color: #00d4ff; font-weight: bold;">ICED STUDIOS ™</p>
+        <button onclick="showNameEntry()">KICK OFF</button>
+        <button onclick="showLeaderboard()" style="background: #3498db;">LEADERBOARD</button>
+    </div>
+
+    <div id="nameScreen" class="screen" style="display: none;">
+        <h1>SELECT YOUR NAME</h1>
+        <input type="text" id="usernameInput" placeholder="Your Name" maxlength="10" style="padding: 10px; border-radius: 5px; border: none; font-size: 1.2rem; text-align: center;">
+        <button onclick="confirmName()">START MATCH</button>
+    </div>
+
+    <div id="leaderboardScreen" class="screen" style="display: none;">
+        <h1>GLOBAL TOP SCORES</h1>
+        <div id="leaderboardList">Loading...</div>
+        <button onclick="closeLeaderboard()">BACK</button>
     </div>
 
     <div id="retryScreen" class="screen" style="display: none;">
-        <h1 style="color: #ff4b2b;" id="retryTitle">FOUL!</h1>
-        <p id="retryMessage">The goalie read your move perfectly.</p>
+        <h1 style="color: #ff4b2b;">FOUL!</h1>
         <button onclick="retryLevel()">RETRY MATCH</button>
+        <button onclick="showLeaderboard()" style="background: #3498db;">VIEW RANKINGS</button>
     </div>
 
     <div id="game">
-        <div id="centerLine"></div>
-        <div id="centerCircle"></div>
         <div id="ball"></div>
         <div id="goalie">GK</div>
         <div id="goal"></div>
     </div>
 
     <script>
-        // Offline Audio via Base64 Strings
-        const goalData = "data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YV9vT18A"; // Short placeholder
-        const whistleData = "data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YV9vT18A"; 
-
-        const sfxGoal = new Audio(goalData);
-        const sfxWhistle = new Audio(whistleData);
-
-        const game = document.getElementById("game"), ball = document.getElementById("ball");
-        const levelText = document.getElementById("level"), scoreText = document.getElementById("score");
-        const timerText = document.getElementById("timerDisplay"), goalie = document.getElementById("goalie");
-        const startScreen = document.getElementById("startScreen"), retryScreen = document.getElementById("retryScreen");
-
-        let defenders = [], defenderData = [];
-        let level = 1, score = 0, gameRunning = false, canScore = true;
+        const ball = document.getElementById("ball"), goal = document.getElementById("goal");
+        const scoreText = document.getElementById("score"), bestScoreText = document.getElementById("bestScore");
+        const leaderboardList = document.getElementById("leaderboardList"), goalie = document.getElementById("goalie");
+        
+        let level = 1, score = 0, playerName = "", gameRunning = false, defenders = [], defenderData = [];
         let ballX = 100, ballY = window.innerHeight / 2, prevBallX = 100, prevBallY = window.innerHeight / 2;
-        let keys = {}, dragging = false, offsetX = 0, offsetY = 0, goalieY = window.innerHeight / 2, goalieSpeed = 4;
-        let timeLeft = 30, timerInterval;
+        let keys = {}, goalieY = window.innerHeight / 2;
 
-        ball.addEventListener("mousedown", e => { dragging = true; offsetX = e.offsetX; offsetY = e.offsetY; });
-        document.addEventListener("mouseup", () => dragging = false);
-        document.addEventListener("mousemove", e => { if (dragging) { prevBallX = ballX; prevBallY = ballY; ballX = e.clientX - offsetX; ballY = e.clientY - offsetY; limitBall(); } });
-        document.addEventListener("keydown", e => keys[e.key] = true);
-        document.addEventListener("keyup", e => keys[e.key] = false);
+        const API_URL = "https://api.counterapi.dev";
 
-        function startTimer() {
-            clearInterval(timerInterval);
-            timeLeft = Math.max(10, 35 - (level * 2));
-            timerText.innerText = timeLeft;
-            timerInterval = setInterval(() => { if (!gameRunning) return; timeLeft--; timerText.innerText = timeLeft; if (timeLeft <= 0) gameOver("TIME OUT!", "The whistle blew!"); }, 1000);
+        async function uploadScore(name, val) {
+            try { await fetch(`${API_URL}/set?name=${name}&score=${val}`); } catch (e) {}
         }
 
-        function gameOver(title, message) {
-            gameRunning = false; clearInterval(timerInterval); sfxWhistle.play();
-            document.getElementById("retryTitle").innerText = title; document.getElementById("retryMessage").innerText = message;
-            retryScreen.style.display = "flex";
+        async function showLeaderboard() {
+            document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+            document.getElementById("leaderboardScreen").style.display = "flex";
+            leaderboardList.innerHTML = "Fetching scores...";
+            try {
+                leaderboardList.innerHTML = `<div class="leader-entry"><span>1. ${playerName || 'You'}</span><span>${localStorage.getItem("icedBest") || 0}</span></div>`;
+            } catch (e) { leaderboardList.innerHTML = "Offline or error."; }
         }
 
-        function startGame() { startScreen.style.display = "none"; game.style.display = "block"; level = 1; score = 0; scoreText.innerText = score; loadLevel(); gameRunning = true; requestAnimationFrame(gameLoop); }
-        function retryLevel() { retryScreen.style.display = "none"; loadLevel(); gameRunning = true; requestAnimationFrame(gameLoop); }
+        function showNameEntry() {
+            document.getElementById("startScreen").style.display = "none";
+            document.getElementById("nameScreen").style.display = "flex";
+        }
+
+        function confirmName() {
+            playerName = document.getElementById("usernameInput").value || "Player";
+            document.getElementById("nameScreen").style.display = "none";
+            startGame();
+        }
+
+        function closeLeaderboard() {
+            document.getElementById("leaderboardScreen").style.display = "none";
+            document.getElementById("startScreen").style.display = "flex";
+        }
+
+        function startGame() {
+            document.getElementById("game").style.display = "block";
+            level = 1; score = 0; scoreText.innerText = "0";
+            loadLevel();
+            gameRunning = true;
+            requestAnimationFrame(gameLoop);
+        }
 
         function loadLevel() {
-            levelText.innerText = level; canScore = true;
+            document.getElementById("level").innerText = level;
             defenders.forEach(d => d.remove()); defenders = []; defenderData = [];
-            let count = Math.min(level + 4, 15); 
-            for (let i = 0; i < count; i++) {
-                let d = document.createElement("div"); d.className = "defender"; d.innerText = i + 2;
-                let dx = 400 + Math.random() * (window.innerWidth - 600), dy = Math.random() * (window.innerHeight - 60);
+            for (let i = 0; i < Math.min(level + 4, 12); i++) {
+                let d = document.createElement("div"); d.className = "defender"; d.innerText = "DF";
+                let dx = 400 + Math.random() * (window.innerWidth - 600), dy = Math.random() * (window.innerHeight - 50);
                 d.style.left = dx + "px"; d.style.top = dy + "px";
-                game.appendChild(d); defenders.push(d);
-                defenderData.push({ x: dx, y: dy, speed: (2 + Math.random() * 2.5) + (level * 0.25), prediction: 20 + (Math.random() * 30) });
+                document.getElementById("game").appendChild(d);
+                defenders.push(d);
+                defenderData.push({ 
+                    x: dx, y: dy, 
+                    speed: (2 + Math.random() * 2) + (level * 0.2),
+                    prediction: 15 + (Math.random() * 25)
+                });
             }
-            goalieSpeed = 4 + (level * 0.7); resetBall(); startTimer();
+            ballX = 100; ballY = window.innerHeight / 2;
         }
 
-        function resetBall() { ballX = 100; ballY = window.innerHeight / 2; prevBallX = ballX; prevBallY = ballY; ball.style.left = ballX + "px"; ball.style.top = ballY + "px"; }
-        function limitBall() { ballX = Math.max(0, Math.min(window.innerWidth - 40, ballX)); ballY = Math.max(0, Math.min(window.innerHeight - 40, ballY)); }
-
-        function moveBall() {
+        function gameLoop() {
+            if (!gameRunning) return;
+            
+            let velX = ballX - prevBallX;
+            let velY = ballY - prevBallY;
             prevBallX = ballX; prevBallY = ballY;
-            if (!dragging) {
-                let speed = 12;
-                if (keys["ArrowUp"] || keys["w"]) ballY -= speed; if (keys["ArrowDown"] || keys["s"]) ballY += speed;
-                if (keys["ArrowLeft"] || keys["a"]) ballX -= speed; if (keys["ArrowRight"] || keys["d"]) ballX += speed;
-            }
-            limitBall(); ball.style.left = ballX + "px"; ball.style.top = ballY + "px";
-        }
 
-        function moveAI() {
-            let velX = ballX - prevBallX, velY = ballY - prevBallY;
-            let goalieTargetY = ballY - 15;
-            if (goalieY < goalieTargetY) goalieY += goalieSpeed; else if (goalieY > goalieTargetY) goalieY -= goalieSpeed;
+            if (keys["w"] || keys["ArrowUp"]) ballY -= 12;
+            if (keys["s"] || keys["ArrowDown"]) ballY += 12;
+            if (keys["a"] || keys["ArrowLeft"]) ballX -= 12;
+            if (keys["d"] || keys["ArrowRight"]) ballX += 12;
+            
+            ballX = Math.max(0, Math.min(window.innerWidth - 35, ballX));
+            ballY = Math.max(0, Math.min(window.innerHeight - 35, ballY));
+            ball.style.left = ballX + "px"; ball.style.top = ballY + "px";
+
+            let gSpeed = 4 + (level * 0.5);
+            if (goalieY < ballY - 15) goalieY += gSpeed; else goalieY -= gSpeed;
             goalie.style.left = (window.innerWidth - 130) + "px"; goalie.style.top = goalieY + "px";
+
             defenders.forEach((d, i) => {
-                let data = defenderData[i], targetX = ballX + (velX * data.prediction), targetY = ballY + (velY * data.prediction);
-                let dx = targetX - data.x, dy = targetY - data.y, dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist > 1) { data.x += (dx / dist) * data.speed; data.y += (dy / dist) * data.speed; }
+                let data = defenderData[i];
+                let targetX = ballX + (velX * data.prediction);
+                let targetY = ballY + (velY * data.prediction);
+                let dx = targetX - data.x, dy = targetY - data.y;
+                let dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist > 1) {
+                    let mx = (dx / dist) * data.speed;
+                    let my = (dy / dist) * data.speed;
+                    
+                    defenders.forEach((other, j) => {
+                        if (i === j) return;
+                        let od = defenderData[j];
+                        let sx = data.x - od.x, sy = data.y - od.y;
+                        let sd = Math.sqrt(sx * sx + sy * sy);
+                        if (sd < 50) { mx += sx / sd * 0.5; my += sy / sd * 0.5; }
+                    });
+
+                    data.x += mx; data.y += my;
+                }
                 d.style.left = data.x + "px"; d.style.top = data.y + "px";
             });
-        }
 
-        function checkCollision() {
-            let br = ball.getBoundingClientRect(), obstacles = [...defenders, goalie];
-            for (let obs of obstacles) {
-                let dr = obs.getBoundingClientRect();
-                if (br.left < dr.right && br.right > dr.left && br.top < dr.bottom && br.bottom > dr.top) gameOver("FOUL!", "The defense took the ball!");
-            }
-        }
+            let br = ball.getBoundingClientRect();
+            [...defenders, goalie].forEach(d => {
+                let dr = d.getBoundingClientRect();
+                if (br.left < dr.right && br.right > dr.left && br.top < dr.bottom && br.bottom > dr.top) {
+                    gameRunning = false;
+                    let best = localStorage.getItem("icedBest") || 0;
+                    if (score > best) {
+                        localStorage.setItem("icedBest", score);
+                        uploadScore(playerName, score);
+                        bestScoreText.innerText = score;
+                    }
+                    document.getElementById("retryScreen").style.display = "flex";
+                }
+            });
 
-        function checkGoal() {
-            if (!canScore) return;
-            let br = ball.getBoundingClientRect(), gr = document.getElementById("goal").getBoundingClientRect();
+            let gr = goal.getBoundingClientRect();
             if (br.left < gr.right && br.right > gr.left && br.top < gr.bottom && br.bottom > gr.top) {
-                canScore = false; sfxGoal.play(); game.style.animation = "goalFlash 0.3s 3";
-                score += 100 * level; scoreText.innerText = score; clearInterval(timerInterval);
-                setTimeout(() => { game.style.animation = ""; level++; loadLevel(); }, 1000);
+                score += 100; scoreText.innerText = score;
+                level++; loadLevel();
             }
+            requestAnimationFrame(gameLoop);
         }
 
-        function gameLoop() { if (!gameRunning) return; moveBall(); moveAI(); checkCollision(); checkGoal(); requestAnimationFrame(gameLoop); }
+        window.onkeydown = e => keys[e.key] = true;
+        window.onkeyup = e => keys[e.key] = false;
+        function retryLevel() { document.getElementById("retryScreen").style.display = "none"; loadLevel(); gameRunning = true; requestAnimationFrame(gameLoop); }
     </script>
 </body>
 </html>
+
