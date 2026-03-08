@@ -1,113 +1,167 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Elite Soccer - Iced Studios</title>
-<style>
-#sitePadlock{position:fixed;inset:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10000;color:white;font-family:sans-serif;}
-.pad-box{background:#111;padding:50px;border:3px solid #f1c40f;border-radius:15px;text-align:center;}
-.pad-input{font-size:2rem;width:150px;text-align:center;margin:20px 0;background:#222;color:#f1c40f;border:1px solid #444;}
-.pad-btn{padding:10px 30px;background:#f1c40f;border:none;font-weight:bold;cursor:pointer;}
-body{margin:0;overflow:hidden;background:#0a240d;font-family:sans-serif;color:white;}
-#game{display:none;width:100vw;height:100vh;position:relative;background:linear-gradient(90deg,#27ae60 50%,#2ecc71 50%);background-size:80px 100%;border:12px solid rgba(255,255,255,0.9);box-sizing:border-box;}
-#ball{width:35px;height:35px;background:radial-gradient(circle at 30% 30%,#fff,#ccc,#888);border-radius:50%;position:absolute;z-index:10;border:2px solid #333;}
-.defender,#goalie{width:50px;height:50px;position:absolute;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;border:3px solid rgba(0,0,0,0.4);}
-.defender{background:linear-gradient(135deg,#e74c3c,#c0392b);}
-#goalie{background:linear-gradient(135deg,#f1c40f,#f39c12);width:55px;height:55px;}
-#goal{width:80px;height:260px;border:8px solid white;border-right:none;position:absolute;right:0;top:calc(50% - 130px);background:rgba(255,255,255,0.15);}
-.screen{position:fixed;inset:0;background:rgba(0,0,0,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;text-align:center;}
-button{padding:18px 45px;font-size:1.3rem;cursor:pointer;background:#f1c40f;border:none;border-radius:50px;font-weight:bold;margin-top:20px;}
-#ui{position:fixed;top:25px;left:35px;z-index:50;display:flex;gap:30px;font-size:1.3rem;font-weight:bold;}
-.stat-box{background:rgba(0,0,0,0.6);padding:10px 20px;border-radius:12px;}
-#keypadScreen{display:none;}
-.keypad-container{background:#1a1a1a;padding:30px;border-radius:50%;border:10px solid #444;}
-.keypad-grid{display:grid;grid-template-columns:repeat(3,65px);gap:12px;margin-top:15px;}
-.key{width:65px;height:65px;background:#222;border:2px solid #555;border-radius:50%;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.5rem;}
-#keypadDisplay{font-family:monospace;font-size:2rem;height:40px;color:#00ff00;}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elite Soccer - Iced Studios</title>
+    <style>
+        #sitePadlock {
+            position: fixed; inset: 0; background: #000; display: flex; 
+            flex-direction: column; align-items: center; justify-content: center; 
+            z-index: 10000; color: white; font-family: sans-serif;
+        }
+        .pad-box { background: #111; padding: 50px; border: 3px solid #f1c40f; border-radius: 15px; text-align: center; }
+        .pad-input { font-size: 2rem; width: 150px; text-align: center; margin: 20px 0; background: #222; color: #f1c40f; border: 1px solid #444; outline: none; }
+        .pad-btn { padding: 10px 30px; background: #f1c40f; border: none; font-weight: bold; cursor: pointer; }
+
+        body { margin: 0; overflow: hidden; background: #0a240d; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: white; }
+        #game { display: none; width: 100vw; height: 100vh; position: relative; background: linear-gradient(90deg, #27ae60 50%, #2ecc71 50%); background-size: 80px 100%; border: 12px solid rgba(255,255,255,0.9); box-sizing: border-box; }
+        #ball { width: 35px; height: 35px; background: radial-gradient(circle at 30% 30%, #fff, #ccc, #888); border-radius: 50%; position: absolute; z-index: 10; border: 2px solid #333; }
+        .defender, #goalie { width: 50px; height: 50px; position: absolute; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; border: 3px solid rgba(0,0,0,0.4); }
+        .defender { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+        #goalie { background: linear-gradient(135deg, #f1c40f, #f39c12); width: 55px; height: 55px; }
+        #goal { width: 80px; height: 260px; border: 8px solid white; border-right: none; position: absolute; right: 0; top: calc(50% - 130px); background: rgba(255,255,255,0.15); }
+        .screen { position: fixed; inset: 0; background: rgba(0,0,0,0.92); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; text-align: center; }
+        button { padding: 18px 45px; font-size: 1.3rem; cursor: pointer; background: #f1c40f; border: none; border-radius: 50px; font-weight: bold; margin-top: 20px; }
+        #ui { position: fixed; top: 25px; left: 35px; z-index: 50; display: flex; gap: 30px; font-size: 1.3rem; font-weight: bold; width: 90%; align-items: center; }
+        .stat-box { background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 12px; }
+        #keypadScreen { display: none; }
+        .keypad-container { background: #1a1a1a; padding: 30px; border-radius: 50%; border: 10px solid #444; }
+        .keypad-grid { display: grid; grid-template-columns: repeat(3, 65px); gap: 12px; margin-top: 15px; }
+        .key { width: 65px; height: 65px; background: #222; border: 2px solid #555; border-radius: 50%; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+        #keypadDisplay { font-family: 'Courier New', monospace; font-size: 2.2rem; height: 45px; color: #00ff00; -webkit-text-security: disc; text-security: disc; }
+    </style>
 </head>
 <body>
 
-<div id="sitePadlock">
-<div class="pad-box">
-<h1>LOCKED</h1>
-<input type="password" id="passInput" class="pad-input" maxlength="4">
-<br>
-<button class="pad-btn" onclick="unlockSite()">ENTER</button>
-</div>
-</div>
+    <div id="sitePadlock">
+        <div class="pad-box">
+            <h1>LOCKED</h1>
+            <input type="password" id="passInput" class="pad-input" maxlength="4" autofocus>
+            <br>
+            <button class="pad-btn" onclick="unlockSite()">ENTER</button>
+        </div>
+    </div>
 
-<div id="ui">
-<div class="stat-box">🏆 LVL: <span id="level">1</span></div>
-<div class="stat-box">⚽ SCORE: <span id="score">0</span></div>
-<div class="stat-box">⏳ TIME: <span id="timer">30</span>s</div>
-<div id="speedMode" class="stat-box" style="display:none;color:#00d4ff;">⚡ GOD SPEED</div>
-</div>
+    <div id="ui">
+        <div class="stat-box">🏆 LVL: <span id="level">1</span></div>
+        <div class="stat-box">⚽ SCORE: <span id="score">0</span></div>
+        <div id="speedMode" class="stat-box" style="color: #00d4ff; display: none;">⚡ GOD SPEED</div>
+    </div>
 
-<div id="startScreen" class="screen">
-<h1>POWERING ENTERTAINMENT</h1>
-<p>ICED STUDIOS ™</p>
-<button onclick="startGame()">KICK OFF</button>
-</div>
+    <div id="startScreen" class="screen">
+        <h1 style="font-size: 3rem; letter-spacing: 5px;">POWERING ENTERTAINMENT</h1>
+        <p style="color: #00d4ff; font-weight: bold; font-size: 1.2rem;">AN ICED PRODUCTION</p>
+        <p style="color: #00d4ff; font-weight: bold;">ICED STUDIOS ™</p>
+        <button onclick="showNameEntry()">KICK OFF</button>
+    </div>
 
-<div id="keypadScreen" class="screen">
-<div class="keypad-container">
-<div id="keypadDisplay">____</div>
-<div class="keypad-grid">
-<div class="key" onclick="pressKey('1')">1</div>
-<div class="key" onclick="pressKey('2')">2</div>
-<div class="key" onclick="pressKey('3')">3</div>
-<div class="key" onclick="pressKey('4')">4</div>
-<div class="key" onclick="pressKey('5')">5</div>
-<div class="key" onclick="pressKey('6')">6</div>
-<div class="key" onclick="pressKey('7')">7</div>
-<div class="key" onclick="pressKey('8')">8</div>
-<div class="key" onclick="pressKey('9')">9</div>
-<div class="key" onclick="pressKey('0')">0</div>
-</div>
-<button onclick="closeKeypad()">CANCEL</button>
-</div>
-</div>
+    <div id="nameScreen" class="screen" style="display: none;">
+        <h1>SELECT NAME</h1>
+        <input type="text" id="usernameInput" placeholder="Name..." maxlength="12">
+        <button onclick="confirmName()">START</button>
+    </div>
 
-<div id="winScreen" class="screen" style="display:none">
-<h1>GOAL!</h1>
-<button onclick="nextLevel()">NEXT</button>
-</div>
+    <div id="keypadScreen" class="screen">
+        <div class="keypad-container">
+            <div id="keypadDisplay">____</div>
+            <div class="keypad-grid">
+                <div class="key" onclick="pressKey('1')">1</div><div class="key" onclick="pressKey('2')">2</div><div class="key" onclick="pressKey('3')">3</div>
+                <div class="key" onclick="pressKey('4')">4</div><div class="key" onclick="pressKey('5')">5</div><div class="key" onclick="pressKey('6')">6</div>
+                <div class="key" onclick="pressKey('7')">7</div><div class="key" onclick="pressKey('8')">8</div><div class="key" onclick="pressKey('9')">9</div>
+                <div class="key" onclick="pressKey('0')">0</div>
+            </div>
+            <button onclick="closeKeypad()">CANCEL</button>
+        </div>
+    </div>
 
-<div id="retryScreen" class="screen" style="display:none">
-<h1>FOUL!</h1>
-<button onclick="retryLevel()">RETRY</button>
-</div>
+    <div id="winScreen" class="screen" style="display: none;"><h1>GOAL!</h1><button onclick="nextLevel()">NEXT</button></div>
+    <div id="retryScreen" class="screen" style="display: none;"><h1>FOUL!</h1><button onclick="retryLevel()">RETRY</button></div>
 
-<div id="game">
-<div id="ball"></div>
-<div id="goalie">GK</div>
-<div id="goal"></div>
-</div>
+    <div id="game"><div id="ball"></div><div id="goalie">GK</div><div id="goal"></div></div>
 
-<script>
-function unlockSite(){if(document.getElementById("passInput").value==="0000"){document.getElementById("sitePadlock").style.display="none";}else{alert("WRONG CODE");}}
-const ball=document.getElementById("ball");
-const goalie=document.getElementById("goalie");
-const scoreText=document.getElementById("score");
-const timerText=document.getElementById("timer");
-let level=1,score=0,gameRunning=false,isGodSpeed=false;
-let defenders=[],defenderData=[],ballX=100,ballY=window.innerHeight/2,goalieY=window.innerHeight/2;
-let ballSpeed=9.5,keys={},enteredCode="",spawnProtection=0,timeLeft=30,timerInterval;
-window.addEventListener("keydown",(e)=>{keys[e.key.toLowerCase()]=true;if(e.key.toLowerCase()==="e" && gameRunning){openKeypad();}});
-window.addEventListener("keyup",(e)=>keys[e.key.toLowerCase()]=false);
-function openKeypad(){gameRunning=false;enteredCode="";document.getElementById("keypadDisplay").innerText="____";document.getElementById("keypadScreen").style.display="flex";}
-function closeKeypad(){document.getElementById("keypadScreen").style.display="none";gameRunning=true;}
-function pressKey(num){if(enteredCode.length<4){enteredCode+=num;document.getElementById("keypadDisplay").innerText="*".repeat(enteredCode.length);
-if(enteredCode.length===4){let display=document.getElementById("keypadDisplay");if(enteredCode==="4790"){isGodSpeed=!isGodSpeed;ballSpeed=isGodSpeed?18:9.5;document.getElementById("speedMode").style.display=isGodSpeed?"block":"none";display.innerText="CODE ACCEPTED";display.style.color="#00ff00";setTimeout(()=>{display.innerText="____";closeKeypad();},900);}else{display.innerText="INVALID";display.style.color="red";setTimeout(()=>{display.innerText="____";display.style.color="#00ff00";enteredCode="";},900);}}}}
-function startGame(){document.getElementById("startScreen").style.display="none";document.getElementById("game").style.display="block";loadLevel();startTimer();gameRunning=true;requestAnimationFrame(gameLoop);}
-function loadLevel(){document.getElementById("level").innerText=level;defenders.forEach(d=>d.remove());defenders=[];defenderData=[];ballX=100;ballY=window.innerHeight/2;spawnProtection=60;let numDefenders=Math.min(level+6,15);for(let i=0;i<numDefenders;i++){let d=document.createElement("div");d.className="defender";d.innerText="DF";document.getElementById("game").appendChild(d);defenders.push(d);let spawnX,spawnY;do{spawnX=300+Math.random()*(window.innerWidth-400);spawnY=Math.random()*(window.innerHeight-50);}while(Math.abs(spawnX-ballX)<200 && Math.abs(spawnY-ballY)<150);defenderData.push({x:spawnX,y:spawnY,speed:4+(level*0.5)});}}
-function startTimer(){clearInterval(timerInterval);timeLeft=30;timerInterval=setInterval(()=>{if(gameRunning){timeLeft--;timerText.innerText=timeLeft;if(timeLeft<=0){gameRunning=false;document.getElementById("retryScreen").style.display="flex";}}},1000);}
-function gameLoop(){if(spawnProtection>0)spawnProtection--;if(gameRunning){if(keys["w"]||keys["arrowup"])ballY-=ballSpeed;if(keys["s"]||keys["arrowdown"])ballY+=ballSpeed;if(keys["a"]||keys["arrowleft"])ballX-=ballSpeed;if(keys["d"]||keys["arrowright"])ballX+=ballSpeed;ballX=Math.max(0,Math.min(window.innerWidth-35,ballX));ballY=Math.max(0,Math.min(window.innerHeight-35,ballY));ball.style.left=ballX+"px";ball.style.top=ballY+"px";defenderData.forEach((d,i)=>{let dy=ballY-d.y;let dx=ballX-d.x;let dist=Math.sqrt(dx*dx+dy*dy);if(dist>1){d.y+=(dy/dist)*d.speed;d.x+=(dx/dist)*(d.speed*0.5);}defenders[i].style.left=d.x+"px";defenders[i].style.top=d.y+"px";if(spawnProtection<=0 && Math.abs(ballX-d.x)<28 && Math.abs(ballY-d.y)<28){gameRunning=false;document.getElementById("retryScreen").style.display="flex";}});goalieY+=(ballY-goalieY)*0.05;goalie.style.right="50px";goalie.style.top=goalieY+"px";if(ballX>window.innerWidth-100 && ballY>window.innerHeight/2-130 && ballY<window.innerHeight/2+130){gameRunning=false;score+=100*level;scoreText.innerText=score;document.getElementById("winScreen").style.display="flex";}}requestAnimationFrame(gameLoop);}
-function nextLevel(){level++;document.getElementById("winScreen").style.display="none";loadLevel();gameRunning=true;}
-function retryLevel(){document.getElementById("retryScreen").style.display="none";loadLevel();gameRunning=true;}
-</script>
+    <script>
+        function unlockSite() { 
+            if(document.getElementById('passInput').value === "0000") {
+                document.getElementById('sitePadlock').style.display = "none"; 
+            } else {
+                alert("WRONG CODE");
+                document.getElementById('passInput').value = "";
+            }
+        }
+        document.getElementById('passInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') { unlockSite(); }
+        });
 
+        const ball = document.getElementById("ball"), goalie = document.getElementById("goalie"), scoreText = document.getElementById("score");
+        let level = 1, score = 0, gameRunning = false, isGodSpeed = false;
+        let defenders = [], defenderData = [], ballX = 100, ballY = window.innerHeight / 2, goalieY = window.innerHeight / 2;
+        let ballSpeed = 9.5, keys = {}, enteredCode = "";
+
+        window.addEventListener("keydown", (e) => { keys[e.key.toLowerCase()] = true; if (e.key.toLowerCase() === 'e' && gameRunning) openKeypad(); });
+        window.addEventListener("keyup", (e) => keys[e.key.toLowerCase()] = false);
+
+        function openKeypad() { gameRunning = false; enteredCode = ""; document.getElementById("keypadScreen").style.display = "flex"; }
+        function closeKeypad() { document.getElementById("keypadScreen").style.display = "none"; gameRunning = true; }
+        
+        function pressKey(num) {
+            if (enteredCode.length < 4) {
+                enteredCode += num; 
+                document.getElementById("keypadDisplay").innerText = enteredCode;
+                if (enteredCode.length === 4) {
+                    if (enteredCode === "4790") { 
+                        isGodSpeed = !isGodSpeed; 
+                        ballSpeed = isGodSpeed ? 18 : 9.5; 
+                        document.getElementById("speedMode").style.display = isGodSpeed ? "block" : "none"; 
+                    }
+                    setTimeout(closeKeypad, 500);
+                }
+            }
+        }
+
+        function showNameEntry() { document.getElementById("startScreen").style.display = "none"; document.getElementById("nameScreen").style.display = "flex"; }
+        function confirmName() { document.getElementById("nameScreen").style.display = "none"; startGame(); }
+        function startGame() { document.getElementById("game").style.display = "block"; loadLevel(); gameRunning = true; requestAnimationFrame(gameLoop); }
+
+        function loadLevel() {
+            document.getElementById("level").innerText = level;
+            defenders.forEach(d => d.remove()); defenders = []; defenderData = [];
+            ballSpeed = isGodSpeed ? 18 : 9.5;
+            let numDefenders = Math.min(level + 3, 9);
+            for (let i = 0; i < numDefenders; i++) {
+                let d = document.createElement("div"); d.className = "defender"; d.innerText = "DF";
+                document.getElementById("game").appendChild(d);
+                defenders.push(d);
+                defenderData.push({ x: 400 + Math.random() * (window.innerWidth - 600), y: Math.random() * (window.innerHeight - 50), speed: 2.2 + (level * 0.2) });
+            }
+            ballX = 100; ballY = window.innerHeight / 2;
+        }
+
+        function gameLoop() {
+            if (gameRunning) {
+                if (keys['w'] || keys['arrowup']) ballY -= ballSpeed; if (keys['s'] || keys['arrowdown']) ballY += ballSpeed; if (keys['a'] || keys['arrowleft']) ballX -= ballSpeed; if (keys['d'] || keys['arrowright']) ballX += ballSpeed;
+                
+                ballX = Math.max(0, Math.min(window.innerWidth - 35, ballX));
+                ballY = Math.max(0, Math.min(window.innerHeight - 35, ballY));
+                
+                ball.style.left = ballX + "px"; ball.style.top = ballY + "px";
+                defenderData.forEach((d, i) => {
+                    let dy = ballY - d.y, dx = ballX - d.x, dist = Math.sqrt(dx*dx + dy*dy);
+                    if(dist > 1) { d.y += (dy/dist) * d.speed; d.x += (dx/dist) * (d.speed * 0.5); }
+                    defenders[i].style.left = d.x + "px"; defenders[i].style.top = d.y + "px";
+                    
+                    if (Math.abs(ballX - d.x) < 28 && Math.abs(ballY - d.y) < 28) { 
+                        gameRunning = false; 
+                        document.getElementById("retryScreen").style.display = "flex"; 
+                    }
+                });
+                goalieY += (ballY - goalieY) * 0.05; goalie.style.right = "50px"; goalie.style.top = goalieY + "px";
+                if (ballX > window.innerWidth - 100 && ballY > window.innerHeight/2 - 130 && ballY < window.innerHeight/2 + 130) { gameRunning = false; score += 100 * level; scoreText.innerText = score; document.getElementById("winScreen").style.display = "flex"; }
+            }
+            requestAnimationFrame(gameLoop);
+        }
+        function nextLevel() { level++; document.getElementById("winScreen").style.display = "none"; loadLevel(); gameRunning = true; }
+        function retryLevel() { document.getElementById("retryScreen").style.display = "none"; loadLevel(); gameRunning = true; }
+    </script>
 </body>
 </html>
