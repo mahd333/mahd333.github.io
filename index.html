@@ -7,7 +7,7 @@
     <style>
         body { margin: 0; overflow: hidden; background: #0e3012; font-family: 'Trebuchet MS', sans-serif; color: white; }
         #game { display: none; width: 100vw; height: 100vh; position: relative; background: #27ae60; border: 10px solid white; box-sizing: border-box; }
-        #ball { width: 35px; height: 35px; background: radial-gradient(circle at 30% 30%, #fff, #888); border-radius: 50%; position: absolute; cursor: grab; z-index: 10; border: 2px solid #222; }
+        #ball { width: 35px; height: 35px; background: radial-gradient(circle at 30% 30%, #fff, #888); border-radius: 50%; position: absolute; z-index: 10; border: 2px solid #222; }
         .defender, #goalie { width: 48px; height: 48px; position: absolute; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 3px solid rgba(0,0,0,0.3); }
         .defender { background: linear-gradient(135deg, #ff4b2b, #ff416c); }
         #goalie { background: linear-gradient(135deg, #f9d423, #ff4e50); width: 55px; height: 55px; }
@@ -15,8 +15,15 @@
         .screen { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; text-align: center; }
         button { padding: 15px 40px; font-size: 1.2rem; cursor: pointer; background: #f1c40f; border: none; border-radius: 50px; font-weight: bold; margin-top: 15px; }
         #ui { position: fixed; top: 20px; left: 30px; z-index: 50; display: flex; gap: 25px; font-size: 1.2rem; font-weight: bold; width: 95%; align-items: center; }
-        #leaderboardList { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; width: 300px; margin-top: 20px; }
-        .leader-entry { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        input { padding: 12px; border-radius: 8px; border: none; font-size: 1.2rem; text-align: center; width: 200px; }
+
+        /* KEYPAD STYLES */
+        #keypadScreen { display: none; background: rgba(0,0,0,0.98); }
+        .keypad-container { background: #1a1a1a; padding: 25px; border-radius: 50%; border: 8px solid #333; box-shadow: 0 0 50px black; position: relative; }
+        .keypad-grid { display: grid; grid-template-columns: repeat(3, 60px); gap: 10px; margin-top: 15px; }
+        .key { width: 60px; height: 60px; background: #222; border: 2px solid #444; border-radius: 50%; color: white; font-size: 1.4rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.1s; }
+        .key:active { background: #444; transform: scale(0.9); }
+        #keypadDisplay { font-family: 'Courier New', monospace; font-size: 2rem; letter-spacing: 5px; height: 40px; color: #00ff00; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -25,31 +32,44 @@
         <div>🏆 LVL: <span id="level">1</span></div>
         <div>⚽ SCORE: <span id="score">0</span></div>
         <div style="color: #f1c40f;">⭐ BEST: <span id="bestScore">0</span></div>
+        <div id="speedMode" style="color: #00d4ff; display: none;">⚡ GOD SPEED</div>
+        <div id="pauseStatus" style="color: #ff4b2b; display: none;">⏸️ PAUSED</div>
     </div>
 
     <div id="startScreen" class="screen">
-        <h1>AN ICED PRODUCTION</h1>
+        <h1>POWERING ENTERTAINMENT</h1>
+        <p style="color: #00d4ff; font-weight: bold;">AN ICED PRODUCTION</p>
         <p style="color: #00d4ff; font-weight: bold;">ICED STUDIOS ™</p>
         <button onclick="showNameEntry()">KICK OFF</button>
-        <button onclick="showLeaderboard()" style="background: #3498db;">LEADERBOARD</button>
     </div>
 
     <div id="nameScreen" class="screen" style="display: none;">
         <h1>SELECT YOUR NAME</h1>
-        <input type="text" id="usernameInput" placeholder="Your Name" maxlength="10" style="padding: 10px; border-radius: 5px; border: none; font-size: 1.2rem; text-align: center;">
+        <input type="text" id="usernameInput" placeholder="Enter Name..." maxlength="12">
         <button onclick="confirmName()">START MATCH</button>
     </div>
 
-    <div id="leaderboardScreen" class="screen" style="display: none;">
-        <h1>GLOBAL TOP SCORES</h1>
-        <div id="leaderboardList">Loading...</div>
-        <button onclick="closeLeaderboard()">BACK</button>
+    <div id="keypadScreen" class="screen">
+        <div class="keypad-container">
+            <div id="keypadDisplay">____</div>
+            <div class="keypad-grid">
+                <div class="key" onclick="pressKey('1')">1</div><div class="key" onclick="pressKey('2')">2</div><div class="key" onclick="pressKey('3')">3</div>
+                <div class="key" onclick="pressKey('4')">4</div><div class="key" onclick="pressKey('5')">5</div><div class="key" onclick="pressKey('6')">6</div>
+                <div class="key" onclick="pressKey('7')">7</div><div class="key" onclick="pressKey('8')">8</div><div class="key" onclick="pressKey('9')">9</div>
+                <div class="key" onclick="pressKey('*')">*</div><div class="key" onclick="pressKey('0')">0</div><div class="key" onclick="pressKey('#')">#</div>
+            </div>
+            <button id="cancelBtn" onclick="closeKeypad()" style="padding: 10px 20px; font-size: 0.8rem; background: #ff4b2b; border: none; border-radius: 20px; color: white; margin-top: 15px; cursor: pointer;">CANCEL</button>
+        </div>
+    </div>
+
+    <div id="winScreen" class="screen" style="display: none;">
+        <h1 style="color: #f1c40f;">GOAL!!!</h1>
+        <button onclick="nextLevel()">NEXT LEVEL</button>
     </div>
 
     <div id="retryScreen" class="screen" style="display: none;">
         <h1 style="color: #ff4b2b;">FOUL!</h1>
         <button onclick="retryLevel()">RETRY MATCH</button>
-        <button onclick="showLeaderboard()" style="background: #3498db;">VIEW RANKINGS</button>
     </div>
 
     <div id="game">
@@ -59,142 +79,143 @@
     </div>
 
     <script>
-        const ball = document.getElementById("ball"), goal = document.getElementById("goal");
+        const ball = document.getElementById("ball"), goalie = document.getElementById("goalie");
         const scoreText = document.getElementById("score"), bestScoreText = document.getElementById("bestScore");
-        const leaderboardList = document.getElementById("leaderboardList"), goalie = document.getElementById("goalie");
+        const speedModeUI = document.getElementById("speedMode"), pauseUI = document.getElementById("pauseStatus");
+        const keypadScreen = document.getElementById("keypadScreen"), keypadDisplay = document.getElementById("keypadDisplay");
         
-        let level = 1, score = 0, playerName = "", gameRunning = false, defenders = [], defenderData = [];
-        let ballX = 100, ballY = window.innerHeight / 2, prevBallX = 100, prevBallY = window.innerHeight / 2;
-        let keys = {}, goalieY = window.innerHeight / 2;
+        let level = 1, score = 0, playerName = localStorage.getItem("icedName") || "", gameRunning = false, isPaused = false;
+        let defenders = [], defenderData = [], ballX = 100, ballY = window.innerHeight / 2, goalieY = window.innerHeight / 2;
+        let ballSpeed = 9; // Increased base speed
+        let keys = {}, enteredCode = "";
+        let failedAttempts = 0, isKeypadLocked = false;
 
-        const API_URL = "https://api.counterapi.dev";
+        window.addEventListener("keydown", (e) => {
+            const key = e.key.toLowerCase();
+            keys[key] = true;
+            if (key === 'p' && gameRunning) { isPaused = !isPaused; pauseUI.style.display = isPaused ? "block" : "none"; }
+            if (key === 'e' && gameRunning && !isPaused && keypadScreen.style.display !== "flex") { openKeypad(); }
+        });
+        window.addEventListener("keyup", (e) => keys[e.key.toLowerCase()] = false);
 
-        async function uploadScore(name, val) {
-            try { await fetch(`${API_URL}/set?name=${name}&score=${val}`); } catch (e) {}
+        function openKeypad() {
+            if (isKeypadLocked) return;
+            gameRunning = false; enteredCode = "";
+            keypadDisplay.innerText = "____"; keypadDisplay.style.color = "#00ff00";
+            keypadScreen.style.display = "flex";
         }
 
-        async function showLeaderboard() {
-            document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
-            document.getElementById("leaderboardScreen").style.display = "flex";
-            leaderboardList.innerHTML = "Fetching scores...";
-            try {
-                leaderboardList.innerHTML = `<div class="leader-entry"><span>1. ${playerName || 'You'}</span><span>${localStorage.getItem("icedBest") || 0}</span></div>`;
-            } catch (e) { leaderboardList.innerHTML = "Offline or error."; }
+        function pressKey(num) {
+            if (isKeypadLocked || enteredCode.length >= 4) return;
+            enteredCode += num; keypadDisplay.innerText = enteredCode.padEnd(4, "_");
+            if (enteredCode.length === 4) {
+                if (enteredCode === "4790") {
+                    failedAttempts = 0;
+                    if (ballSpeed < 20) {
+                        ballSpeed = 28; speedModeUI.style.display = "block";
+                        keypadDisplay.innerText = "ACCEPTED"; keypadDisplay.style.color = "#00ff00";
+                    } else {
+                        ballSpeed = 9; speedModeUI.style.display = "none";
+                        keypadDisplay.innerText = "REMOVED"; keypadDisplay.style.color = "#f1c40f";
+                    }
+                    setTimeout(closeKeypad, 800);
+                } else {
+                    failedAttempts++; keypadDisplay.innerText = "DENIED"; keypadDisplay.style.color = "#ff4b2b";
+                    if (failedAttempts >= 3) { setTimeout(lockKeypad, 500); } 
+                    else { setTimeout(() => { enteredCode = ""; keypadDisplay.innerText = "____"; keypadDisplay.style.color = "#00ff00"; }, 800); }
+                }
+            }
         }
 
-        function showNameEntry() {
-            document.getElementById("startScreen").style.display = "none";
-            document.getElementById("nameScreen").style.display = "flex";
+        function lockKeypad() {
+            isKeypadLocked = true; keypadDisplay.innerText = "LOCKED";
+            document.getElementById("cancelBtn").style.display = "none";
+            setTimeout(() => { isKeypadLocked = false; failedAttempts = 0; document.getElementById("cancelBtn").style.display = "inline-block"; closeKeypad(); }, 5000);
         }
 
-        function confirmName() {
-            playerName = document.getElementById("usernameInput").value || "Player";
-            document.getElementById("nameScreen").style.display = "none";
-            startGame();
-        }
+        function closeKeypad() { keypadScreen.style.display = "none"; gameRunning = true; requestAnimationFrame(gameLoop); }
 
-        function closeLeaderboard() {
-            document.getElementById("leaderboardScreen").style.display = "none";
-            document.getElementById("startScreen").style.display = "flex";
-        }
+        function showNameEntry() { if (playerName) return startGame(); document.getElementById("startScreen").style.display = "none"; document.getElementById("nameScreen").style.display = "flex"; }
+        function confirmName() { playerName = document.getElementById("usernameInput").value.trim() || "Player"; localStorage.setItem("icedName", playerName); document.getElementById("nameScreen").style.display = "none"; startGame(); }
 
         function startGame() {
             document.getElementById("game").style.display = "block";
+            document.getElementById("startScreen").style.display = "none";
+            document.getElementById("retryScreen").style.display = "none";
+            document.getElementById("winScreen").style.display = "none";
             level = 1; score = 0; scoreText.innerText = "0";
-            loadLevel();
-            gameRunning = true;
-            requestAnimationFrame(gameLoop);
+            bestScoreText.innerText = localStorage.getItem("icedBest") || 0;
+            ballSpeed = 9; speedModeUI.style.display = "none"; isPaused = false;
+            loadLevel(); gameRunning = true; requestAnimationFrame(gameLoop);
         }
 
         function loadLevel() {
             document.getElementById("level").innerText = level;
             defenders.forEach(d => d.remove()); defenders = []; defenderData = [];
-            for (let i = 0; i < Math.min(level + 4, 12); i++) {
+            for (let i = 0; i < level + 3; i++) {
                 let d = document.createElement("div"); d.className = "defender"; d.innerText = "DF";
-                let dx = 400 + Math.random() * (window.innerWidth - 600), dy = Math.random() * (window.innerHeight - 50);
-                d.style.left = dx + "px"; d.style.top = dy + "px";
+                let dx = 300 + Math.random() * (window.innerWidth - 500), dy = Math.random() * (window.innerHeight - 50);
                 document.getElementById("game").appendChild(d);
                 defenders.push(d);
-                defenderData.push({ 
-                    x: dx, y: dy, 
-                    speed: (2 + Math.random() * 2) + (level * 0.2),
-                    prediction: 15 + (Math.random() * 25)
-                });
+                defenderData.push({ x: dx, y: dy, speed: 1.1 + (level * 0.12), angle: Math.random() * Math.PI * 2 });
             }
             ballX = 100; ballY = window.innerHeight / 2;
         }
 
+        function nextLevel() { document.getElementById("winScreen").style.display = "none"; level++; loadLevel(); gameRunning = true; requestAnimationFrame(gameLoop); }
+
         function gameLoop() {
             if (!gameRunning) return;
-            
-            let velX = ballX - prevBallX;
-            let velY = ballY - prevBallY;
-            prevBallX = ballX; prevBallY = ballY;
+            if (!isPaused) {
+                if (keys['w'] || keys['arrowup']) ballY -= ballSpeed;
+                if (keys['s'] || keys['arrowdown']) ballY += ballSpeed;
+                if (keys['a'] || keys['arrowleft']) ballX -= ballSpeed;
+                if (keys['d'] || keys['arrowright']) ballX += ballSpeed;
 
-            if (keys["w"] || keys["ArrowUp"]) ballY -= 12;
-            if (keys["s"] || keys["ArrowDown"]) ballY += 12;
-            if (keys["a"] || keys["ArrowLeft"]) ballX -= 12;
-            if (keys["d"] || keys["ArrowRight"]) ballX += 12;
-            
-            ballX = Math.max(0, Math.min(window.innerWidth - 35, ballX));
-            ballY = Math.max(0, Math.min(window.innerHeight - 35, ballY));
-            ball.style.left = ballX + "px"; ball.style.top = ballY + "px";
+                ballX = Math.max(20, Math.min(window.innerWidth - 40, ballX));
+                ballY = Math.max(20, Math.min(window.innerHeight - 40, ballY));
 
-            let gSpeed = 4 + (level * 0.5);
-            if (goalieY < ballY - 15) goalieY += gSpeed; else goalieY -= gSpeed;
-            goalie.style.left = (window.innerWidth - 130) + "px"; goalie.style.top = goalieY + "px";
+                // Dumber Goalie: Slower tracking (0.04 instead of 0.08)
+                goalieY += (ballY - goalieY) * 0.04;
+                goalie.style.top = (goalieY - 27) + "px";
+                goalie.style.right = "20px";
 
-            defenders.forEach((d, i) => {
-                let data = defenderData[i];
-                let targetX = ballX + (velX * data.prediction);
-                let targetY = ballY + (velY * data.prediction);
-                let dx = targetX - data.x, dy = targetY - data.y;
-                let dist = Math.sqrt(dx * dx + dy * dy);
-
-                if (dist > 1) {
-                    let mx = (dx / dist) * data.speed;
-                    let my = (dy / dist) * data.speed;
+                // Smarter Defenders: Surround and predict
+                defenders.forEach((d, i) => {
+                    let data = defenderData[i];
+                    // Prediction logic + Spread repulsion
+                    let targetX = ballX + (Math.cos(data.angle) * 60); 
+                    let targetY = ballY + (Math.sin(data.angle) * 60);
                     
+                    let moveX = (targetX - data.x) * 0.015 * data.speed;
+                    let moveY = (targetY - data.y) * 0.015 * data.speed;
+
+                    // Repulsion to keep them spread out
                     defenders.forEach((other, j) => {
                         if (i === j) return;
-                        let od = defenderData[j];
-                        let sx = data.x - od.x, sy = data.y - od.y;
-                        let sd = Math.sqrt(sx * sx + sy * sy);
-                        if (sd < 50) { mx += sx / sd * 0.5; my += sy / sd * 0.5; }
+                        let dx = data.x - defenderData[j].x, dy = data.y - defenderData[j].y, dist = Math.sqrt(dx*dx + dy*dy);
+                        if (dist < 80) { moveX += (dx/dist)*0.7; moveY += (dy/dist)*0.7; }
                     });
 
-                    data.x += mx; data.y += my;
-                }
-                d.style.left = data.x + "px"; d.style.top = data.y + "px";
-            });
+                    data.x += moveX; data.y += moveY; d.style.left = data.x + "px"; d.style.top = data.y + "px";
+                    if (Math.sqrt((ballX - data.x)**2 + (ballY - data.y)**2) < 40) endGame();
+                });
 
-            let br = ball.getBoundingClientRect();
-            [...defenders, goalie].forEach(d => {
-                let dr = d.getBoundingClientRect();
-                if (br.left < dr.right && br.right > dr.left && br.top < dr.bottom && br.bottom > dr.top) {
-                    gameRunning = false;
-                    let best = localStorage.getItem("icedBest") || 0;
-                    if (score > best) {
-                        localStorage.setItem("icedBest", score);
-                        uploadScore(playerName, score);
-                        bestScoreText.innerText = score;
-                    }
-                    document.getElementById("retryScreen").style.display = "flex";
+                if (ballX > window.innerWidth - 80 && ballY > window.innerHeight/2 - 130 && ballY < window.innerHeight/2 + 130) {
+                    score += 100; scoreText.innerText = score; gameRunning = false; document.getElementById("winScreen").style.display = "flex";
                 }
-            });
-
-            let gr = goal.getBoundingClientRect();
-            if (br.left < gr.right && br.right > gr.left && br.top < gr.bottom && br.bottom > gr.top) {
-                score += 100; scoreText.innerText = score;
-                level++; loadLevel();
+                ball.style.left = (ballX - 17) + "px"; ball.style.top = (ballY - 17) + "px";
             }
             requestAnimationFrame(gameLoop);
         }
 
-        window.onkeydown = e => keys[e.key] = true;
-        window.onkeyup = e => keys[e.key] = false;
-        function retryLevel() { document.getElementById("retryScreen").style.display = "none"; loadLevel(); gameRunning = true; requestAnimationFrame(gameLoop); }
+        function endGame() {
+            gameRunning = false;
+            if (score > (localStorage.getItem("icedBest") || 0)) localStorage.setItem("icedBest", score);
+            document.getElementById("retryScreen").style.display = "flex";
+        }
+
+        function retryLevel() { startGame(); }
     </script>
 </body>
 </html>
-
